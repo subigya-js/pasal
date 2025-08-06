@@ -1,6 +1,5 @@
-import React from 'react'
 import Link from 'next/link';
-import { FiSearch, FiShoppingCart, FiUser, FiHeart } from "react-icons/fi"; // example added icon
+import { FiHeart, FiSearch, FiShoppingCart, FiUser } from "react-icons/fi";
 
 const Navbar = () => {
     return (
