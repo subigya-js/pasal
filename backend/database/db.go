@@ -27,7 +27,7 @@ func ConnectDB() {
 		log.Fatal(err)
 	}
 
-	DB = client.Database("ginAuthDB")
+	DB = client.Database("PasalDB")
 	log.Println("Database connected...")
 }
 
