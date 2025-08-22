@@ -21,7 +21,6 @@ func ConnectDB() {
 		log.Fatal(err)
 	}
 
-	// Test connection
 	err = client.Ping(ctx, nil)
 	if err != nil {
 		log.Fatal(err)
