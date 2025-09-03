@@ -38,10 +38,17 @@ func Signup(c *gin.Context) {
 		return
 	}
 
-	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(user.Password), 10)
+	if user.Password == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Password is required.",
+		})
+		return
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), 10)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to hash password.",
+			"error": "Failed to hash password." + err.Error(),
 		})
 		return
 	}
@@ -114,8 +121,8 @@ func Dashboard(c *gin.Context) {
 	name, _ := c.Get("name")
 	userID, _ := c.Get("userID")
 	c.JSON(http.StatusOK, gin.H{
-		"userID":  userID,
-		"email":   email,
-		"name":    name,
+		"userID": userID,
+		"email":  email,
+		"name":   name,
 	})
 }
