@@ -11,6 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -36,13 +37,23 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
+		// Convert string back to ObjectID for database query
+		userObjectID, err := primitive.ObjectIDFromHex(claims.UserID)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error": "Invalid user ID",
+			})
+			c.Abort()
+			return
+		}
+
 		// Fetch user data from database
 		userCollection := database.GetCollection("users")
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
 		var user model.User
-		err = userCollection.FindOne(ctx, bson.M{"email": claims.Email}).Decode(&user)
+		err = userCollection.FindOne(ctx, bson.M{"_id": userObjectID}).Decode(&user)
 		if err != nil {
 			if err == mongo.ErrNoDocuments {
 				c.JSON(http.StatusUnauthorized, gin.H{
@@ -57,7 +68,8 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		c.Set("email", claims.Email)
+		c.Set("userID", user.ID.Hex())
+		c.Set("email", user.Email)
 		c.Set("name", user.Name)
 		c.Next()
 	}

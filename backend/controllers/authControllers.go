@@ -39,6 +39,13 @@ func Signup(c *gin.Context) {
 	}
 
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(user.Password), 10)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to hash password.",
+		})
+		return
+	}
+
 	user.Password = string(hashedPassword)
 	user.ID = primitive.NewObjectID()
 
@@ -49,7 +56,7 @@ func Signup(c *gin.Context) {
 		})
 		return
 	}
-	
+
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "User created successfully.",
 	})
@@ -89,7 +96,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	token, err := helper.GenerateJWT(user.Email)
+	token, err := helper.GenerateJWT(user.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to generate token.",
@@ -105,8 +112,9 @@ func Login(c *gin.Context) {
 func Dashboard(c *gin.Context) {
 	email, _ := c.Get("email")
 	name, _ := c.Get("name")
+	userID, _ := c.Get("userID")
 	c.JSON(http.StatusOK, gin.H{
-		"message": "Welcome to your dashboard",
+		"userID":  userID,
 		"email":   email,
 		"name":    name,
 	})
