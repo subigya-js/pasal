@@ -1,24 +1,31 @@
 package helper
 
 import (
+	"fmt"
 	"log"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-var jwtKey = getJWTKey()
+var (
+	jwtKey []byte
+	once   sync.Once
+)
 
-func getJWTKey() []byte {
-	secret := os.Getenv("JWT_SECRET")
-	if secret == "" {
-		log.Println("Warning: JWT_SECRET environment variable is not et. Using default insecure key for development.")
-		secret = "default_insecure_key_deployment_jwt_secret"
-	}
-
-	return []byte(secret)
+func initializeJWTKey() {
+	once.Do(func() {
+		secret := os.Getenv("JWT_SECRET")
+		if secret == "" {
+			log.Println("⚠️ Warning: JWT_SECRET environment variable is not set. Using default insecure key for development.")
+			secret = "default_insecure_key_deployment_jwt_secret"
+		}
+		jwtKey = []byte(secret)
+		log.Println("JWT key initialized successfully")
+	})
 }
 
 type Claims struct {
@@ -27,6 +34,8 @@ type Claims struct {
 }
 
 func GenerateJWT(userID primitive.ObjectID) (string, error) {
+	initializeJWTKey()
+
 	expirationTime := time.Now().Add(24 * time.Hour)
 	claims := &Claims{
 		UserID: userID.Hex(),
@@ -40,8 +49,12 @@ func GenerateJWT(userID primitive.ObjectID) (string, error) {
 }
 
 func ValidateJWT(tokenString string) (*Claims, error) {
+	initializeJWTKey()
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
 		return jwtKey, nil
 	})
 

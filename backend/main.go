@@ -24,6 +24,7 @@ func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "3001"
+		log.Println("Using default port: 3001")
 	}
 
 	log.Println("Server is running on port " + port)
