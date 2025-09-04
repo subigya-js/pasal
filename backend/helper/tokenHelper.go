@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"sync"
@@ -15,7 +16,7 @@ var (
 	once   sync.Once
 )
 
-func getJWTKey() []byte {
+func initializeJWTKey() {
 	once.Do(func() {
 		secret := os.Getenv("JWT_SECRET")
 		if secret == "" {
@@ -25,7 +26,6 @@ func getJWTKey() []byte {
 		jwtKey = []byte(secret)
 		log.Println("JWT key initialized successfully")
 	})
-	return jwtKey
 }
 
 type Claims struct {
@@ -34,6 +34,8 @@ type Claims struct {
 }
 
 func GenerateJWT(userID primitive.ObjectID) (string, error) {
+	initializeJWTKey()
+
 	expirationTime := time.Now().Add(24 * time.Hour)
 	claims := &Claims{
 		UserID: userID.Hex(),
@@ -43,13 +45,17 @@ func GenerateJWT(userID primitive.ObjectID) (string, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(getJWTKey())
+	return token.SignedString(jwtKey)
 }
 
 func ValidateJWT(tokenString string) (*Claims, error) {
+	initializeJWTKey()
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-		return getJWTKey(), nil
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return jwtKey, nil
 	})
 
 	if err != nil || !token.Valid {
