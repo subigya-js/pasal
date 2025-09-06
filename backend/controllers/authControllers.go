@@ -120,6 +120,7 @@ func Dashboard(c *gin.Context) {
 	email, _ := c.Get("email")
 	name, _ := c.Get("name")
 	userID, _ := c.Get("userID")
+	
 	c.JSON(http.StatusOK, gin.H{
 		"userID": userID,
 		"email":  email,
