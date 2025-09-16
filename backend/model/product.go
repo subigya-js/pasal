@@ -14,6 +14,7 @@ type Product struct {
 	SKU         string             `json:"sku" bson:"sku"`
 	CategoryID  primitive.ObjectID `json:"category_id" bson:"category_id"`
 	Category    *Category          `json:"category" bson:"category"`
+	Rating      float64            `json:"rating" bson:"rating"`
 	Stock       int                `json:"stock" bson:"stock"`
 	Images      []string           `json:"images" bson:"images"`
 	IsActive    bool               `json:"is_active" bson:"is_active"`
