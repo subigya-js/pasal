@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // POST /api/create-product
@@ -123,7 +124,61 @@ func GetAllProducts(c *gin.Context) {
 	})
 }
 
-func GetProductByID() {}
+// GET /api/get-product/:id
+func GetProductByID(c *gin.Context) {
+	productCollection := database.GetCollection("products")
+	productID := c.Param("id")
+
+	// Validate product ID is provided
+	if productID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Product ID is required.",
+		})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// Convert string ID to MongoDB ObjectID
+	objectID, err := primitive.ObjectIDFromHex(productID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid product ID.",
+		})
+		return
+	}
+
+	// Find the product by ID and ensure it's active
+	var product model.Product
+	err = productCollection.FindOne(ctx, bson.M{
+		"_id":       objectID,
+		"is_active": true,
+	}).Decode(&product)
+
+	// Handle different error cases
+	if err == mongo.ErrNoDocuments {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Product not found.",
+		})
+		return
+	}
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to fetch product.",
+		})
+		log.Println("Failed to fetch product:", err)
+		return
+	}
+
+	// Success response
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "success",
+		"message": "Product fetched successfully.",
+		"product": product,
+	})
+}
 
 func UpdateProduct() {}
 
