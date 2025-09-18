@@ -200,7 +200,7 @@ func UpdateProduct(c *gin.Context) {
 		Price       float64  `json:"price,omitempty" binding:"omitempty,gt=0"`
 		SKU         string   `json:"sku,omitempty"`
 		Category    string   `json:"category,omitempty"`
-		Stock       *int      `json:"stock,omitempty" binding:"omitempty,gte=0"`
+		Stock       *int     `json:"stock,omitempty" binding:"omitempty,gte=0"`
 		Images      []string `json:"images,omitempty"`
 	}
 
@@ -301,4 +301,74 @@ func UpdateProduct(c *gin.Context) {
 	})
 }
 
-func DeleteProduct() {}
+// DELETE /api/delete-product/:id
+func DeleteProduct(c *gin.Context) {
+	productCollection := database.GetCollection("products")
+	productID := c.Param("id")
+
+	// Validate product ID
+	if productID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Product ID is required.",
+		})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// Convert string ID to MongoDB ObjectID
+	objectID, err := primitive.ObjectIDFromHex(productID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid product ID.",
+		})
+		return
+	}
+
+	// Check if product exists
+	var product model.Product
+	err = productCollection.FindOne(ctx, bson.M{"_id": objectID, "is_active": true}).Decode(&product)
+	if err == mongo.ErrNoDocuments {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Product not found.",
+		})
+		return
+	}
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to fetch product.",
+		})
+		log.Println("Failed to fetch product:", err)
+		return
+	}
+
+	// Soft delete: set is_active to false instead of actually deleting
+	result, err := productCollection.UpdateOne(
+		ctx, bson.M{"_id": objectID, "is_active": true},
+		bson.M{"$set": bson.M{"is_active": false, "updated_at": time.Now()}},
+	)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to delete product.",
+		})
+		log.Println("Failed to delete product:", err)
+		return
+	}
+
+	if result.MatchedCount <= 0 {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Product not found.",
+		})
+		return
+	}
+
+	// Success response
+	c.JSON(http.StatusOK, gin.H{
+		"status":          "success",
+		"message":         "Product deleted successfully.",
+		"deleted_product": product.Name,
+	})
+}
