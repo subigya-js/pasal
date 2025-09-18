@@ -180,6 +180,125 @@ func GetProductByID(c *gin.Context) {
 	})
 }
 
-func UpdateProduct() {}
+// PUT /api/update-product/:id
+func UpdateProduct(c *gin.Context) {
+	productCollection := database.GetCollection("products")
+	productID := c.Param("id")
+
+	// Validate product ID
+	if productID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Product ID is required.",
+		})
+		return
+	}
+
+	// Input struct for partial updates (all fields optional)
+	var input struct {
+		Name        string   `json:"name,omitempty" binding:"omitempty,min=2"`
+		Description string   `json:"description,omitempty"`
+		Price       float64  `json:"price,omitempty" binding:"omitempty,gt=0"`
+		SKU         string   `json:"sku,omitempty"`
+		Category    string   `json:"category,omitempty"`
+		Stock       *int      `json:"stock,omitempty" binding:"omitempty,gte=0"`
+		Images      []string `json:"images,omitempty"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// Convert string ID to MongoDB ObjectID
+	objectID, err := primitive.ObjectIDFromHex(productID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid product ID.",
+		})
+		return
+	}
+
+	// Check if SKU is being updated and if it already exists
+	if input.SKU != "" {
+		var existingProduct model.Product
+		err := productCollection.FindOne(ctx, bson.M{
+			"sku": input.SKU,
+			"_id": bson.M{"$ne": objectID},
+		}).Decode(&existingProduct)
+
+		if err == nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "SKU already exists.",
+			})
+			return
+		}
+	}
+
+	// Build update document dynamically
+	updateDoc := bson.M{
+		"updated_at": time.Now(),
+	}
+
+	if input.Name != "" {
+		updateDoc["name"] = input.Name
+	}
+
+	if input.Description != "" {
+		updateDoc["description"] = input.Description
+	}
+
+	if input.Price > 0 {
+		updateDoc["price"] = input.Price
+	}
+
+	if input.SKU != "" {
+		updateDoc["sku"] = input.SKU
+	}
+
+	if input.Category != "" {
+		updateDoc["category_id"] = input.Category
+	}
+
+	if input.Stock != nil {
+		updateDoc["stock"] = input.Stock
+	}
+
+	if len(input.Images) > 0 {
+		updateDoc["images"] = input.Images
+	}
+
+	// Update the product
+	result, err := productCollection.UpdateOne(
+		ctx, bson.M{"_id": objectID, "is_active": true},
+		bson.M{"$set": updateDoc},
+	)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to update product.",
+		})
+		log.Println("Failed to update product:", err)
+		return
+	}
+
+	if result.MatchedCount == 0 {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Product not found.",
+		})
+		return
+	}
+
+	// Success response
+	c.JSON(http.StatusOK, gin.H{
+		"status":          "success",
+		"message":         "Product updated successfully.",
+		"udpated_product": updateDoc,
+	})
+}
 
 func DeleteProduct() {}
