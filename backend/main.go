@@ -20,6 +20,7 @@ func main() {
 
 	router := gin.Default()
 	routes.AuthRoutes(router)
+	routes.ProductRoutes(router)
 
 	port := os.Getenv("PORT")
 	if port == "" {
