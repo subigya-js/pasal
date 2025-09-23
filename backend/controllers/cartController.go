@@ -56,7 +56,7 @@ func AddToCart(c *gin.Context) {
 		return
 	}
 
-	// Fetch product details
+	// Fetch product details (Check if product exists and is active)
 	var product model.Product
 	err = productCollection.FindOne(ctx, bson.M{
 		"_id":       productObjectID,
@@ -166,6 +166,52 @@ func AddToCart(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":  "success",
 		"message": "Item added to cart successfully.",
+		"cart":    cart,
+	})
+}
+
+// GET /api/cart
+func GetCart(c *gin.Context) {
+	cartCollection := database.GetCollection("carts")
+
+	// Get user ID from JWT token
+	userIDValue, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "User not authenticated.",
+		})
+		return
+	}
+
+	userID := userIDValue.(primitive.ObjectID)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var cart model.Cart
+	err := cartCollection.FindOne(ctx, bson.M{"user_id": userID}).Decode(&cart)
+
+	if err == mongo.ErrNoDocuments {
+		// Return empty cart
+		c.JSON(http.StatusOK, gin.H{
+			"status":  "success",
+			"message": "Cart is empty.",
+			"cart":    cart,
+		})
+		return
+	}
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to fetch cart.",
+		})
+		log.Println("Failed to fetch cart:", err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "success",
+		"message": "Cart fetched successfully.",
 		"cart":    cart,
 	})
 }
