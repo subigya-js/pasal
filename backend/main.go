@@ -21,6 +21,7 @@ func main() {
 	router := gin.Default()
 	routes.AuthRoutes(router)
 	routes.ProductRoutes(router)
+	routes.CartRoutes(router)
 
 	port := os.Getenv("PORT")
 	if port == "" {
