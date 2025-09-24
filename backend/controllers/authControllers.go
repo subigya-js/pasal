@@ -15,6 +15,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// POST /signup
 func Signup(c *gin.Context) {
 	userCollection := database.GetCollection("users")
 	var user model.User
@@ -69,6 +70,7 @@ func Signup(c *gin.Context) {
 	})
 }
 
+// POST /login
 func Login(c *gin.Context) {
 	userCollection := database.GetCollection("users")
 	var req model.User
@@ -116,6 +118,7 @@ func Login(c *gin.Context) {
 	})
 }
 
+// GET /dashboard
 func Dashboard(c *gin.Context) {
 	email, _ := c.Get("email")
 	name, _ := c.Get("name")
