@@ -324,3 +324,144 @@ func UpdateCartItemQuantity(c *gin.Context) {
 		"cart":    cart,
 	})
 }
+
+// DELETE /api/cart/remote/:product_id
+func RemoveCartItem(c *gin.Context) {
+	cartCollection := database.GetCollection("carts")
+	productID := c.Param("product_id")
+
+	if productID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Product ID is required.",
+		})
+		return
+	}
+
+	// Get user ID from JWT token
+	userIDValue, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "User not authenticated.",
+		})
+		return
+	}
+
+	userID := userIDValue.(primitive.ObjectID)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// Convert product ID to ObjectID
+	productObjectID, err := primitive.ObjectIDFromHex(productID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid product ID.",
+		})
+		return
+	}
+
+	// Find user's cart
+	var cart model.Cart
+	err = cartCollection.FindOne(ctx, bson.M{"user_id": userID}).Decode(&cart)
+
+	if err == mongo.ErrNoDocuments {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Cart not found.",
+		})
+		return
+	}
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to fetch cart.",
+		})
+		log.Println("Failed to fetch cart:", err)
+		return
+	}
+
+	// Find and remove item
+	itemFound := false
+	for i := range cart.Items {
+		if cart.Items[i].ProductID == productObjectID {
+			cart.Items = append(cart.Items[:i], cart.Items[i+1:]...)
+			itemFound = true
+			break
+		}
+	}
+
+	if !itemFound {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Item not found in cart.",
+		})
+		return
+	}
+
+	// Recalculate total
+	cart.Quantity = 0
+	cart.TotalPrice = 0
+	for _, item := range cart.Items {
+		cart.Quantity += item.Quantity
+		cart.TotalPrice += float64(item.Quantity) * item.Price
+	}
+	cart.UpdatedAt = time.Now()
+
+	// Update Cart
+	_, err = cartCollection.ReplaceOne(ctx, bson.M{"user_id": userID}, cart)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to update cart.",
+		})
+		log.Println("Failed to update cart:", err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "success",
+		"message": "Cart updated successfully.",
+		"cart":    cart,
+	})
+}
+
+// DELETE /api/cart/clear
+func ClearCart(c *gin.Context) {
+	cartCollection := database.GetCollection("carts")
+
+	// Get user ID from JWT token
+	userIDValue, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "User not authenticated.",
+		})
+		return
+	}
+
+	userID := userIDValue.(primitive.ObjectID)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// Clear cart
+	_, err := cartCollection.UpdateOne(
+		ctx,
+		bson.M{"user_id": userID},
+		bson.M{"$set": bson.M{
+			"items":       []model.CartItem{},
+			"quantity":    0,
+			"total_price": 0,
+			"updated_at":  time.Now(),
+		}},
+	)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to clear cart.",
+		})
+		log.Println("Failed to clear cart:", err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "success",
+		"message": "Cart cleared successfully.",
+	})
+}
