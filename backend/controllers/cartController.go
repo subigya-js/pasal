@@ -325,7 +325,7 @@ func UpdateCartItemQuantity(c *gin.Context) {
 	})
 }
 
-// DELETE /api/cart/remote/:product_id
+// DELETE /api/cart/remove/:product_id
 func RemoveCartItem(c *gin.Context) {
 	cartCollection := database.GetCollection("carts")
 	productID := c.Param("product_id")
@@ -446,7 +446,7 @@ func ClearCart(c *gin.Context) {
 		bson.M{"user_id": userID},
 		bson.M{"$set": bson.M{
 			"items":       []model.CartItem{},
-			"quantity":    0,
+			"cart_quantity":    0,
 			"total_price": 0,
 			"updated_at":  time.Now(),
 		}},
