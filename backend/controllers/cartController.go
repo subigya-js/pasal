@@ -30,7 +30,14 @@ func AddToCart(c *gin.Context) {
 		return
 	}
 
-	userID := userIDValue.(primitive.ObjectID)
+	userIDString := userIDValue.(string)
+	userID, err := primitive.ObjectIDFromHex(userIDString)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid user ID format.",
+		})
+		return
+	}
 
 	var input struct {
 		ProductID string `json:"product_id" binding:"required"`
@@ -183,20 +190,33 @@ func GetCart(c *gin.Context) {
 		return
 	}
 
-	userID := userIDValue.(primitive.ObjectID)
+	userIDString := userIDValue.(string)
+	userID, err := primitive.ObjectIDFromHex(userIDString)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid user ID format.",
+		})
+		return
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	var cart model.Cart
-	err := cartCollection.FindOne(ctx, bson.M{"user_id": userID}).Decode(&cart)
+	err = cartCollection.FindOne(ctx, bson.M{"user_id": userID}).Decode(&cart)
 
 	if err == mongo.ErrNoDocuments {
-		// Return empty cart
+		// Return empty cart with proper initialization
+		emptyCart := model.Cart{
+			UserID:     userID,
+			Items:      []model.CartItem{},
+			Quantity:   0,
+			TotalPrice: 0,
+		}
 		c.JSON(http.StatusOK, gin.H{
 			"status":  "success",
 			"message": "Cart is empty.",
-			"cart":    cart,
+			"cart":    emptyCart,
 		})
 		return
 	}
@@ -237,7 +257,14 @@ func UpdateCartItemQuantity(c *gin.Context) {
 		return
 	}
 
-	userID := userIDValue.(primitive.ObjectID)
+	userIDString := userIDValue.(string)
+	userID, err := primitive.ObjectIDFromHex(userIDString)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid user ID format.",
+		})
+		return
+	}
 
 	var input struct {
 		Quantity int `json:"quantity" binding:"required,gt=0"`
@@ -346,7 +373,14 @@ func RemoveCartItem(c *gin.Context) {
 		return
 	}
 
-	userID := userIDValue.(primitive.ObjectID)
+	userIDString := userIDValue.(string)
+	userID, err := primitive.ObjectIDFromHex(userIDString)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid user ID format.",
+		})
+		return
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -435,18 +469,25 @@ func ClearCart(c *gin.Context) {
 		return
 	}
 
-	userID := userIDValue.(primitive.ObjectID)
+	userIDString := userIDValue.(string)
+	userID, err := primitive.ObjectIDFromHex(userIDString)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid user ID format.",
+		})
+		return
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	// Clear cart
-	_, err := cartCollection.UpdateOne(
+	_, err = cartCollection.UpdateOne(
 		ctx,
 		bson.M{"user_id": userID},
 		bson.M{"$set": bson.M{
 			"items":       []model.CartItem{},
-			"cart_quantity":    0,
+			"quantity":    0,
 			"total_price": 0,
 			"updated_at":  time.Now(),
 		}},
