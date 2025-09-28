@@ -23,7 +23,20 @@ type Order struct {
 }
 
 type OrderItem struct {
+	ProductID    primitive.ObjectID `json:"product_id" bson:"product_id"`
+	Product      *Product           `json:"product" bson:"product"`
+	Quantity     int                `json:"quantity" bson:"quantity"`
+	PricePerUnit float64            `json:"price_per_unit" bson:"price_per_unit"`
+	TotalPrice   float64            `json:"total_price" bson:"total_price"`
 }
 
 type ShippingAddress struct {
+	FullName     string `json:"full_name" bson:"full_name"`
+	Phone        string `json:"phone" bson:"phone"`
+	AddressLine1 string `json:"address_line1" bson:"address_line1"`
+	AddressLine2 string `json:"address_line2" bson:"address_line2"`
+	City         string `json:"city" bson:"city"`
+	State        string `json:"state" bson:"state"`
+	PostalCode   string `json:"postal_code" bson:"postal_code"`
+	Country      string `json:"country" bson:"country"`
 }
