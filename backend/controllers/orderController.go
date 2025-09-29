@@ -256,3 +256,143 @@ func GetOrders(c *gin.Context) {
 		},
 	})
 }
+
+// GET /api/orders/:id
+func GetOrderDetails(c *gin.Context) {
+	orderCollection := database.GetCollection("orders")
+	orderID := c.Param("id")
+
+	if orderID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Order ID is required",
+		})
+		return
+	}
+
+	// Get users ID from JWT token.
+	userId, success := helper.GetUserID(c)
+	if !success {
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	orderObjectID, err := primitive.ObjectIDFromHex(orderID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid order ID.",
+		})
+		return
+	}
+
+	var order model.Order
+	err = orderCollection.FindOne(ctx, bson.M{
+		"_id":     orderObjectID,
+		"user_id": userId,
+	}).Decode(&order)
+
+	if err == mongo.ErrNoDocuments {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Order not found.",
+		})
+		return
+	}
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to fetch order details.",
+		})
+		log.Println("Failed to fetch order: ", err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "success",
+		"message": "Order details fetched successfully.",
+		"order":   order,
+	})
+}
+
+// PUT /api/orders/:id/cancel
+func CancelOrder(c *gin.Context) {
+	orderCollection := database.GetCollection("orders")
+	orderID := c.Param("id")
+
+	if orderID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Order ID is required",
+		})
+		return
+	}
+
+	// Get users ID from JWT token.
+	userId, success := helper.GetUserID(c)
+	if !success {
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	orderObjectID, err := primitive.ObjectIDFromHex(orderID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid order ID.",
+		})
+		return
+	}
+
+	var order model.Order
+	err = orderCollection.FindOne(ctx, bson.M{
+		"_id":     orderObjectID,
+		"user_id": userId,
+	}).Decode(&order)
+
+	if err == mongo.ErrNoDocuments {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Order not found.",
+		})
+		return
+	}
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to fetch order.",
+		})
+		log.Println("Failed to fetch order: ", err)
+		return
+	}
+
+	if !order.OrderStatus.CanBeCancelled() {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": fmt.Sprintf("Cannot cancel order with status '%s'", order.OrderStatus),
+		})
+		return
+	}
+
+	_, err = orderCollection.UpdateOne(
+		ctx,
+		bson.M{
+			"_id":     orderObjectID,
+			"user_id": userId,
+		},
+		bson.M{"$set": bson.M{
+			"order_status": model.OrderStatusCancelled,
+			"updated_at":   time.Now(),
+		}},
+	)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to cancel order.",
+		})
+		log.Println("Failed to cancel order: ", err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "success",
+		"message": "Order cancelled successfully.",
+	})
+}
