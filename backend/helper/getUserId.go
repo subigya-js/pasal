@@ -18,6 +18,12 @@ func GetUserID(c *gin.Context) (primitive.ObjectID, bool) {
 		return primitive.NilObjectID, false
 	}
 
-	userId := userIDValue.(primitive.ObjectID)
+	userId, ok := userIDValue.(primitive.ObjectID)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Invalid user ID type.",
+		})
+		return primitive.NilObjectID, false
+	}
 	return userId, true
 }
