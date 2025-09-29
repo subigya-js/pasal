@@ -8,12 +8,14 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // POST /api/orders/place
@@ -160,5 +162,97 @@ func PlaceOrder(c *gin.Context) {
 		"status":  "success",
 		"message": "Order placed successfully.",
 		"order":   order,
+	})
+}
+
+// GET /api/orders
+func GetOrders(c *gin.Context) {
+	orderCollection := database.GetCollection("orders")
+
+	// Get users ID from JWT token.
+	userId, success := helper.GetUserID(c)
+	if !success {
+		return
+	}
+
+	// Get pagination and filtering
+	pageStr := c.DefaultQuery("page", "1")
+	limitStr := c.DefaultQuery("limit", "10")
+	status := c.Query("status")
+
+	page, _ := strconv.Atoi(pageStr)
+	limit, _ := strconv.Atoi(limitStr)
+
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 50 {
+		limit = 10
+	}
+
+	skip := (page - 1) * limit
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// Build filter
+	filter := bson.M{"user_id": userId}
+	if status != "" {
+		orderStatus := model.OrderStatus(status)
+		if orderStatus.IsValid() {
+			filter["order_status"] = orderStatus
+		}
+	}
+
+	// Get total count
+	total, err := orderCollection.CountDocuments(ctx, filter)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to count orders.",
+		})
+		log.Println("Failed to count orders: ", err)
+		return
+	}
+
+	// Find orders
+	findOptions := options.Find()
+	findOptions.SetSkip(int64(skip))
+	findOptions.SetLimit(int64(limit))
+	findOptions.SetSort(bson.D{{"created_at", -1}})
+
+	cursor, err := orderCollection.Find(ctx, filter, findOptions)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to fetch orders.",
+		})
+		log.Println("Failed to fetch orders: ", err)
+		return
+	}
+	defer cursor.Close(ctx)
+
+	var orders []model.Order
+	if err = cursor.All(ctx, &orders); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to fetch orders.",
+		})
+		return
+	}
+
+	if orders == nil {
+		orders = []model.Order{}
+	}
+
+	totalPages := (total + int64(limit) - 1) / int64(limit)
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "success",
+		"message": "Orders fetched successfully.",
+		"orders":  orders,
+		"pagination": gin.H{
+			"current_page": page,
+			"total_pages":  totalPages,
+			"total_items":  total,
+			"has_next":     page < int(totalPages),
+			"has_prev":     page > 1,
+		},
 	})
 }
