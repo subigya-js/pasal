@@ -74,7 +74,7 @@ func PlaceOrder(c *gin.Context) {
 		return
 	}
 
-	if len(cart.Items) >= 0 {
+	if len(cart.Items) == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Cart is empty.",
 		})
@@ -180,8 +180,20 @@ func GetOrders(c *gin.Context) {
 	limitStr := c.DefaultQuery("limit", "10")
 	status := c.Query("status")
 
-	page, _ := strconv.Atoi(pageStr)
-	limit, _ := strconv.Atoi(limitStr)
+	page, err := strconv.Atoi(pageStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid 'page' query parameter. Must be an integer.",
+		})
+		return
+	}
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid 'limit' query parameter. Must be an integer.",
+		})
+		return
+	}
 
 	if page < 1 {
 		page = 1
