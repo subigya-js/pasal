@@ -22,6 +22,7 @@ import (
 func PlaceOrder(c *gin.Context) {
 	orderCollection := database.GetCollection("orders")
 	cartCollection := database.GetCollection("carts")
+	productCollection := database.GetCollection("products")
 
 	// Get user ID from JWT token
 	userId, success := helper.GetUserID(c)
@@ -47,12 +48,12 @@ func PlaceOrder(c *gin.Context) {
 	paymentMode := model.PaymentMode(input.PaymentMode)
 	if !paymentMode.IsValid() {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid payment mode.",
+			"error": "Invalid payment mode. Valid modes: Cash, Card, Online Payment, Wallet.",
 		})
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	// Get user's cart
@@ -81,18 +82,74 @@ func PlaceOrder(c *gin.Context) {
 		return
 	}
 
-	// Convert cart items to order items
+	// Validate stock availability and prepare order items
 	var orderItems []model.OrderItem
+	stockUpdates := []mongo.WriteModel{}
+
 	for _, cartItem := range cart.Items {
+		// Fetch current product details to verify stock and price
+		var product model.Product
+		err := productCollection.FindOne(ctx, bson.M{
+			"_id":       cartItem.ProductID,
+			"is_active": true,
+		}).Decode(&product)
+
+		if err == mongo.ErrNoDocuments {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": fmt.Sprintf("Product '%s' is no longer available.", cartItem.Product.Name),
+			})
+			return
+		}
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Failed to verify product availability.",
+			})
+			log.Println("Failed to fetch product: ", err)
+			return
+		}
+
+		// Check stock availability
+		if product.Stock < cartItem.Quantity {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": fmt.Sprintf("Insufficient stock for '%s'. Only %d Available",
+					product.Name, product.Stock),
+			})
+			return
+		}
+
+		// Create order item with current product price
 		orderItem := model.OrderItem{
 			ProductID:    cartItem.ProductID,
-			Product:      cartItem.Product,
+			Product:      &product,
 			Quantity:     cartItem.Quantity,
-			PricePerUnit: cartItem.Price,
-			TotalPrice:   float64(cartItem.Quantity) * cartItem.Price,
+			PricePerUnit: product.Price, // Use current price, not cart price
+			TotalPrice:   float64(cartItem.Quantity) * product.Price,
 		}
 		orderItems = append(orderItems, orderItem)
+
+		// Update Stock
+		stockUpdate := mongo.NewUpdateOneModel().
+			SetFilter(bson.M{"_id": cartItem.ProductID}).
+			SetUpdate(bson.M{
+				"$inc": bson.M{"stock": -cartItem.Quantity},
+				"$set": bson.M{"updated_at": time.Now()},
+			})
+		stockUpdates = append(stockUpdates, stockUpdate)
 	}
+
+	// // Convert cart items to order items
+	// var orderItems []model.OrderItem
+	// for _, cartItem := range cart.Items {
+	// 	orderItem := model.OrderItem{
+	// 		ProductID:    cartItem.ProductID,
+	// 		Product:      cartItem.Product,
+	// 		Quantity:     cartItem.Quantity,
+	// 		PricePerUnit: cartItem.Price,
+	// 		TotalPrice:   float64(cartItem.Quantity) * cartItem.Price,
+	// 	}
+	// 	orderItems = append(orderItems, orderItem)
+	// }
 
 	// Generate unique order number
 	orderNumber := fmt.Sprintf("ORD-%d-%s", time.Now().Unix(), userId.Hex()[:6])
@@ -128,41 +185,68 @@ func PlaceOrder(c *gin.Context) {
 		return
 	}
 
-	// Insert order
-	_, err = orderCollection.InsertOne(ctx, order)
+	// Start a MongoDB session for transaction
+	session, err := database.Client.StartSession()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to place order.",
+			"error": "Failed to start transaction.",
 		})
-		log.Println("Failed to create order: ", err)
+		log.Println("Failed to start session: ", err)
+		return
+	}
+	defer session.EndSession(ctx)
+
+	// Execute transaction
+	_, err = session.WithTransaction(ctx, func(sessCtx mongo.SessionContext) (interface{}, error) {
+		// 1. Insert Order
+		_, err = orderCollection.InsertOne(sessCtx, order)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to insert order: %w", err)
+		}
+
+		// 2. Update product stock
+		if len(stockUpdates) > 0 {
+			_, err = productCollection.BulkWrite(sessCtx, stockUpdates)
+			if err != nil {
+				return nil, fmt.Errorf("Failed to update stock: %w", err)
+			}
+		}
+
+		// 3. Clear user's cart
+		_, err = cartCollection.UpdateOne(
+			sessCtx,
+			bson.M{"user_id": userId},
+			bson.M{"$set": bson.M{
+				"items":         []model.CartItem{},
+				"cart_quantity": 0,
+				"total_price":   0,
+				"updated_at":    time.Now(),
+			}},
+		)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to clear cart: %w", err)
+		}
+
+		return nil, nil
+	})
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Failed to place order. Please try again.",
+			"details": err.Error(),
+		})
+		log.Println("Transaction failed: ", err)
 		return
 	}
 
-	// Clear user's cart
-	_, err = cartCollection.UpdateOne(
-		ctx,
-		bson.M{"user_id": userId},
-		bson.M{"$set": bson.M{
-			"items":         []model.CartItem{},
-			"cart_quantity": 0,
-			"total_price":   0,
-			"updated_at":    time.Now(),
-		}},
-	)
-
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to clear cart.",
-		})
-		log.Println("Failed to clear cart: ", err)
-		return
-	}
-
+	// Success response
 	c.JSON(http.StatusCreated, gin.H{
 		"status":  "success",
-		"message": "Order placed successfully.",
+		"message": "Order placed successfully. You will receive a confirmation email shortly.",
 		"order":   order,
 	})
+
+	// TODO: Send order confirmation email
 }
 
 // GET /api/orders
@@ -180,26 +264,19 @@ func GetOrders(c *gin.Context) {
 	limitStr := c.DefaultQuery("limit", "10")
 	status := c.Query("status")
 
+	// Parse and validate page
 	page, err := strconv.Atoi(pageStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid 'page' query parameter. Must be an integer.",
-		})
-		return
-	}
-	limit, err := strconv.Atoi(limitStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid 'limit' query parameter. Must be an integer.",
-		})
-		return
-	}
-
-	if page < 1 {
+	if err != nil || page < 1 {
 		page = 1
 	}
-	if limit < 1 || limit > 50 {
+
+	// Parse and validate limit
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit < 1 {
 		limit = 10
+	}
+	if limit > 50 {
+		limit = 50
 	}
 
 	skip := (page - 1) * limit
@@ -230,7 +307,7 @@ func GetOrders(c *gin.Context) {
 	findOptions := options.Find()
 	findOptions.SetSkip(int64(skip))
 	findOptions.SetLimit(int64(limit))
-	findOptions.SetSort(bson.D{{"created_at", -1}})
+	findOptions.SetSort(bson.D{{"created_at", -1}}) // Most recent first
 
 	cursor, err := orderCollection.Find(ctx, filter, findOptions)
 	if err != nil {
@@ -247,9 +324,11 @@ func GetOrders(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to fetch orders.",
 		})
+		log.Println("Failed to fetch orders: ", err)
 		return
 	}
 
+	// Return empty array instead of null
 	if orders == nil {
 		orders = []model.Order{}
 	}
@@ -298,6 +377,7 @@ func GetOrderDetails(c *gin.Context) {
 		return
 	}
 
+	// Find Order
 	var order model.Order
 	err = orderCollection.FindOne(ctx, bson.M{
 		"_id":     orderObjectID,
@@ -327,8 +407,10 @@ func GetOrderDetails(c *gin.Context) {
 }
 
 // PUT /api/orders/:id/cancel
+// Cancel an order (only if status is Pending or Confirmed)
 func CancelOrder(c *gin.Context) {
 	orderCollection := database.GetCollection("orders")
+	productCollection := database.GetCollection("products")
 	orderID := c.Param("id")
 
 	if orderID == "" {
@@ -347,6 +429,7 @@ func CancelOrder(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
+	// Convert string ID to ObjectID
 	orderObjectID, err := primitive.ObjectIDFromHex(orderID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -355,6 +438,7 @@ func CancelOrder(c *gin.Context) {
 		return
 	}
 
+	// Fetch order
 	var order model.Order
 	err = orderCollection.FindOne(ctx, bson.M{
 		"_id":     orderObjectID,
@@ -376,6 +460,7 @@ func CancelOrder(c *gin.Context) {
 		return
 	}
 
+	// Check if order can be cancelled
 	if !order.OrderStatus.CanBeCancelled() {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": fmt.Sprintf("Cannot cancel order with status '%s'", order.OrderStatus),
@@ -383,21 +468,61 @@ func CancelOrder(c *gin.Context) {
 		return
 	}
 
-	_, err = orderCollection.UpdateOne(
-		ctx,
-		bson.M{
-			"_id":     orderObjectID,
-			"user_id": userId,
-		},
-		bson.M{"$set": bson.M{
-			"order_status": model.OrderStatusCancelled,
-			"updated_at":   time.Now(),
-		}},
-	)
+	// Prepare stock restoration updates
+	stockUpdates := []mongo.WriteModel{}
+	for _, item := range order.Items {
+		stockUpdate := mongo.NewUpdateOneModel().
+			SetFilter(bson.M{"_id": item.ProductID}).
+			SetUpdate(bson.M{
+				"$inc": bson.M{"stock": item.Quantity},
+				"$set": bson.M{"updated_at": time.Now()},
+			})
+		stockUpdates = append(stockUpdates, stockUpdate)
+	}
+
+	// Start transaction for cancellation
+	session, err := database.Client.StartSession()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to start transaction.",
+		})
+		log.Println("Failed to start session: ", err)
+		return
+	}
+	defer session.EndSession(ctx)
+
+	_, err = session.WithTransaction(ctx, func(sessCtx mongo.SessionContext) (interface{}, error) {
+		// 1. Update order status to cancelled
+		_, err := orderCollection.UpdateOne(
+			sessCtx,
+			bson.M{
+				"_id":     orderObjectID,
+				"user_id": userId,
+			},
+			bson.M{"$set": bson.M{
+				"order_status": model.OrderStatusCancelled,
+				"updated_at":   time.Now(),
+			}},
+		)
+
+		if err != nil {
+			return nil, fmt.Errorf("Failed to cancel order: %w", err)
+		}
+
+		// 2. Restore product stock
+		if len(stockUpdates) > 0 {
+			_, err = productCollection.BulkWrite(sessCtx, stockUpdates)
+			if err != nil {
+				return nil, fmt.Errorf("Failed to restore stock: %w", err)
+			}
+		}
+		return nil, nil
+	})
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to cancel order.",
+			"error":   "Failed to cancel order.",
+			"details": err.Error(),
 		})
 		log.Println("Failed to cancel order: ", err)
 		return
@@ -407,4 +532,10 @@ func CancelOrder(c *gin.Context) {
 		"status":  "success",
 		"message": "Order cancelled successfully.",
 	})
+
+	// TODO: Send cancellation email
 }
+
+// =========================
+// ADMIN ORDER ENDPOINTS
+// =========================
