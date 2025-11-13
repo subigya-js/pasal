@@ -539,3 +539,113 @@ func CancelOrder(c *gin.Context) {
 // =========================
 // ADMIN ORDER ENDPOINTS
 // =========================
+
+// GET /api/orders/admin/all
+func GetAllOrders(c *gin.Context) {
+	orderCollection := database.GetCollection("orders")
+
+	// Get pagination and filtering parameters
+	pageStr := c.DefaultQuery("page", "1")
+	limitStr := c.DefaultQuery("limit", "20")
+	status := c.Query("status")
+	userIdStr := c.Query("user_id")
+
+	// Parse and validate page
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page < 1 {
+		page = 1
+	}
+
+	// Parse and validate limit
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit < 1 {
+		limit = 20
+	}
+	if limit > 100 {
+		limit = 100
+	}
+
+	skip := (page - 1) * limit
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Build filter
+	filter := bson.M{}
+
+	// Filter by status
+	if status != "" {
+		orderStatus := model.OrderStatus(status)
+		if orderStatus.IsValid() {
+			filter["order_status"] = orderStatus
+		}
+	}
+
+	// Filter by user ID
+	if userIdStr != "" {
+		userId, err := primitive.ObjectIDFromHex(userIdStr)
+		if err == nil {
+			filter["user_id"] = userId
+		}
+	}
+
+	// Get total count
+	total, err := orderCollection.CountDocuments(ctx, filter)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Falied to count orders.",
+		})
+		log.Println("Failed to count orders: ", err)
+		return
+	}
+
+	// Find orders
+	findOptions := options.Find()
+	findOptions.SetSkip(int64(skip))
+	findOptions.SetLimit(int64(limit))
+	findOptions.SetSort(bson.D{{"created_at", -1}}) // Most recent first
+
+	cursor, err := orderCollection.Find(ctx, filter, findOptions)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to fetch orders.",
+		})
+		log.Println("Failed to fetch orders: ", err)
+		return
+	}
+	defer cursor.Close(ctx)
+
+	var orders []model.Order
+	if err := cursor.All(ctx, &orders); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to fetch orders.",
+		})
+		log.Println("Failed to fetch orders: ", err)
+		return
+	}
+
+	// Return empty array instead of null
+	if orders == nil {
+		orders = []model.Order{}
+	}
+
+	// Calculate pagination metadata
+	totalPages := (total + int64(limit) - 1) / int64(limit)
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "success",
+		"message": "Orders fetched successfully.",
+		"orders":  orders,
+		"pagination": gin.H{
+			"current_page": page,
+			"total_pages":  totalPages,
+			"total_items":  total,
+			"limit":        limit,
+			"has_next":     page < int(totalPages),
+			"has_prev":     page > 1,
+		},
+	})
+}
+
+// PUT /api/orders/admin/:id/status
+// Update order status and/or payment status (admin only)
