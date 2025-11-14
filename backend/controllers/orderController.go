@@ -649,3 +649,183 @@ func GetAllOrders(c *gin.Context) {
 
 // PUT /api/orders/admin/:id/status
 // Update order status and/or payment status (admin only)
+func UpdateOrderStatus(c *gin.Context) {
+	orderCollection := database.GetCollection("orders")
+	orderID := c.Param("id")
+
+	if orderID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Order ID is required.",
+		})
+		return
+	}
+
+	var input struct {
+		OrderStatus   string `json:"order_status, omitempty"`
+		PaymentStatus string `json:"payment_status, omitempty"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	// At least one field must be provided
+	if input.OrderStatus == "" && input.PaymentStatus == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "At least one of 'order_status' or 'payment_status' must be provided.",
+		})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// Convert string ID to ObjectID
+	orderObjectID, err := primitive.ObjectIDFromHex(orderID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid order ID format.",
+		})
+		return
+	}
+
+	// Fetch current order to validate transitions
+	var currentOrder model.Order
+	err = orderCollection.FindOne(ctx, bson.M{"_id": orderObjectID}).Decode(&currentOrder)
+	if err == mongo.ErrNoDocuments {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Order not found.",
+		})
+		return
+	}
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to fetch order.",
+		})
+		log.Println("Failed to fetch order: ", err)
+		return
+	}
+
+	// Build update document
+	updateDoc := bson.M{"updated_at": time.Now()}
+
+	// Validate and update order status
+	if input.OrderStatus != "" {
+		newStatus := model.OrderStatus(input.OrderStatus)
+		if !newStatus.IsValid() {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "Invalid order status.",
+			})
+			return
+		}
+		// Validate status transition
+		if !currentOrder.OrderStatus.CanTransitionTo(newStatus) {
+			availableTransitions := currentOrder.GetAvailableTransitions()
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error":                 fmt.Sprintf("Cannot transition from '%s' to '%s'.", currentOrder.OrderStatus, newStatus),
+				"current_status":        currentOrder.OrderStatus,
+				"requested_status":      newStatus,
+				"available_transitions": availableTransitions,
+			})
+		}
+		updateDoc["order_status"] = newStatus
+	}
+
+	// Validate and update payment status
+	if input.PaymentStatus != "" {
+		paymentStatus := model.PaymentStatus(input.PaymentStatus)
+		if !paymentStatus.IsValid() {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "Invalid Payment status.",
+			})
+			return
+		}
+		updateDoc["payment_status"] = paymentStatus
+	}
+
+	// Update the order
+	result, err := orderCollection.UpdateOne(
+		ctx,
+		bson.M{"_id": orderObjectID},
+		bson.M{"$set": updateDoc},
+	)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to update order status.",
+		})
+		log.Println("Failed to update order: ", err)
+		return
+	}
+
+	if result.MatchedCount == 0 {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Order not found.",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "success",
+		"message": "Order status updated successfully.",
+		"updated": gin.H{
+			"order_status":   input.OrderStatus,
+			"payment_status": input.PaymentStatus,
+		},
+	})
+
+	// TODO: Send status updated email
+}
+
+// HELPER FUNCTIONS (Optional - for statistics)
+// GET /api/orders/admin/stats
+// Get order statistics (admin only)
+func GetOrderStats(c *gin.Context) {
+	orderCollection := database.GetCollection("orders")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Count orders by status
+	pipeline := []bson.M{
+		{
+			"$group": bson.M{
+				"_id":   "$order_status",
+				"count": bson.M{"$sum": 1},
+				"total": bson.M{"$sum": "$total_price"},
+			},
+		},
+	}
+
+	cursor, err := orderCollection.Aggregate(ctx, pipeline)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to fetch order statistics.",
+		})
+		log.Println("Failed to fetch stats:", err)
+		return
+	}
+	defer cursor.Close(ctx)
+
+	var stats []bson.M
+	if err = cursor.All(ctx, &stats); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to decode statistics.",
+		})
+		return
+	}
+
+	// Get total orders count
+	totalOrders, _ := orderCollection.CountDocuments(ctx, bson.M{})
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":       "success",
+		"message":      "Order statistics fetched successfully.",
+		"total_orders": totalOrders,
+		"by_status":    stats,
+	})
+}
