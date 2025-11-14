@@ -10,7 +10,10 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var DB *mongo.Database
+var (
+	DB     *mongo.Database
+	Client *mongo.Client
+)
 
 func ConnectDB() {
 	mongoURL := os.Getenv("MONGO_URL")
@@ -21,17 +24,18 @@ func ConnectDB() {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoURL))
+	var err error
+	Client, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoURL))
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = client.Ping(ctx, nil)
+	err = Client.Ping(ctx, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	DB = client.Database("PasalDB")
+	DB = Client.Database("PasalDB")
 	log.Println("Database connected...")
 }
 
