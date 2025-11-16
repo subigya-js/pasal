@@ -22,7 +22,7 @@ export default function Home() {
                 </div>
               </div>
               <div className='flex flex-col gap-2 mt-2 px-2'>
-                <p className="font-bold text-indigo-600 text-center">{item.price}</p>
+                <p className="font-bold text-blue-500 text-center">{item.price}</p>
                 <div className='flex justify-between'>
                   <Button variant="outline" className=" text-black w-full py-1 px-2 rounded cursor-pointer">
                     Add to Cart
