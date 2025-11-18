@@ -2,13 +2,11 @@ import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import { sampleItems } from "../../../constants/sample";
 
-export default function ProductPage({ params }: { params: { id: string } }) {
-    // Get selected product
-    const product = sampleItems.find(
-        (item) => item.id === Number(params.id)
-    );
+export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
 
-    // Handle invalid product
+    const product = sampleItems.find(item => item.id === Number(id));
+
     if (!product) {
         return (
             <div className="text-center py-10 text-xl font-semibold">
