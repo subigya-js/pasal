@@ -6,6 +6,8 @@ export const sampleItems = [
     price: "Rs. 1199.00",
     sku: "RM2526HOME",
     category_id: "",
+    type: "fan",
+    sizes: ["S - 38", "M - 40", "L - 42", "XL - 44", "XXL - 46"],
     rating: 4.5,
     stock: 10,
     images: [
@@ -47,6 +49,7 @@ export const sampleItems = [
     price: "Rs. 999.00",
     sku: "BAR2526HOME",
     category_id: "",
+    type: "player",
     rating: 3,
     stock: 8,
     images: [
