@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import Image from 'next/image';
 import { sampleItems } from "../../../constants/sample";
 
 export default function ProductPage({ params }: { params: { id: string } }) {
@@ -25,16 +26,16 @@ export default function ProductPage({ params }: { params: { id: string } }) {
             <div className="flex justify-between gap-10">
                 <div className="grid grid-cols-2 gap-4 mb-6 w-[60%] ">
                     {product.images.map((img, index) => (
-                        <div
-                            key={index}
-                            className="relative overflow-hidden rounded- bg-gray-100 border border-gray-400 hover:scale-105 duration-300 transition-transform"
-                        >
-                            <img
+                        <div key={index} className="relative overflow-hidden rounded bg-gray-100 border border-gray-400 hover:scale-105 duration-300 transition-transform">
+                            <Image
                                 src={img.url}
                                 alt={img.alt}
+                                width={500}
+                                height={500}
                                 className="w-full h-full object-cover"
                             />
                         </div>
+
                     ))}
                 </div>
 
@@ -77,11 +78,11 @@ export default function ProductPage({ params }: { params: { id: string } }) {
                         </div>
 
                         <div className='flex gap-8'>
-                            <img src="https://dukaan.b-cdn.net/original/dukaan-media/plugins/trusted_badges_v2/free-shipping.svg" alt="Trust Seal" className="w-22" />
+                            <Image src="https://dukaan.b-cdn.net/original/dukaan-media/plugins/trusted_badges_v2/free-shipping.svg" alt="Trust Seal" width={80} height={80} />
 
-                            <img src="https://dukaan.b-cdn.net/original/dukaan-media/plugins/trusted_badges_v2/premium-quality.svg" alt="Trust Seal" className="w-22" />
+                            <Image src="https://dukaan.b-cdn.net/original/dukaan-media/plugins/trusted_badges_v2/premium-quality.svg" alt="Trust Seal" width={80} height={80} />
 
-                            <img src="https://dms.mydukaan.io/original/dukaan-media/plugins/trusted_badges_v2/cod-available.svg" alt="Trust Seal" className="w-22" />
+                            <Image src="https://dms.mydukaan.io/original/dukaan-media/plugins/trusted_badges_v2/cod-available.svg" alt="Trust Seal" width={80} height={80} />
                         </div>
 
                         <div className='flex flex-col gap-2'>
