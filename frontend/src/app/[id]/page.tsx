@@ -33,7 +33,6 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
                                 className="w-full h-full object-cover"
                             />
                         </div>
-
                     ))}
                 </div>
 
@@ -52,7 +51,6 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
                         {/* Size */}
                         <div>
                             <p className="text-gray-600 font-bold">Select size</p>
-
                             {
                                 product.sizes && product.sizes.length > 0 ? (
                                     <div className="grid grid-cols-5 gap-4 mt-2 w-full">
@@ -88,26 +86,26 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
                             <p>Product Details:</p>
                             {
                                 product.type === 'fan' && (
-                                    <p>Authentic Quality Fan Edition Jersey</p>
+                                    <p className='text-sm'>Authentic Quality Fan Edition Jersey</p>
                                 )
                             }
 
                             {product.type === 'player' && (
-                                <p>Authentic Quality Player Edition Jersey</p>
+                                <p className='text-sm'>Authentic Quality Player Edition Jersey</p>
                             )}
 
                             {
                                 product.type == "fan" && (
                                     <p className='text-justify text-xs'>
-                                        This fan edition jersey pairs official design details with sweat-wicking technology to give you a game-ready or casual wear look inspired by your favourite team.
+                                        This fan edition jersey pairs official design details with sweat-wicking technology to give you a game-ready or casual wear look inspired by your favourite team. <br /> <br />
 
-                                        Super comfortable fabric with Drifit Technology makes it lightweight and moves sweat away from your skin for quicker evaporation, helping you stay dry and comfortable yet keeping you look cool & classy.
+                                        Super comfortable fabric with Drifit Technology makes it lightweight and moves sweat away from your skin for quicker evaporation, helping you stay dry and comfortable yet keeping you look cool & classy. <br /> <br />
 
-                                        Authenticity - Official design is modelled on what the pros wear on the pitch and what supporters wear. Each jersey comes with all the official tags as well.
+                                        <span className='font-bold'>Authenticity</span> - Official design is modelled on what the pros wear on the pitch and what supporters wear. Each jersey comes with all the official tags as well. <br /> <br />
 
-                                        Material - Made from 100% recycled polyester to create high quality products like this jersey, specially designed to deliver peak performance with a lower impact on environment.
+                                        <span className='font-bold'>Material</span> - Made from 100% recycled polyester to create high quality products like this jersey, specially designed to deliver peak performance with a lower impact on environment. <br /> <br />
 
-                                        Fitting - Regular/Parallel Fit
+                                        <span className='font-bold'>Fitting</span> - Regular/Parallel Fit
                                     </p>
                                 )
                             }
