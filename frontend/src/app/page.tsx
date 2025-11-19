@@ -23,7 +23,7 @@ export default function Home() {
                   </div>
                   <div className="p-4 text-center">
                     <h3 className="font-bold text-lg">{item.name}</h3>
-                    <p className="text-gray-600 text-sm">{item.description}</p>
+                    <p className="text-gray-600 text-sm">Season {item.season}</p>
                   </div>
                 </div>
               </Link>

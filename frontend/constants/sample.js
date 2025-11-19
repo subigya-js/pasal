@@ -2,13 +2,15 @@ export const sampleItems = [
   {
     id: 1,
     name: "Real Madrid Home 25/26",
-    description: "Season 25-26",
-    price: "Rs. 1199.00",
+    season: "25-26",
+    mrp: "Rs. 1999.00",
+    price: "Rs. 899.00",
+    off_percentage: 60,
     sku: "RM2526HOME",
     category_id: "",
+    rating: 4.5,
     type: "fan",
     sizes: ["S - 38", "M - 40", "L - 42", "XL - 44", "XXL - 46"],
-    rating: 4.5,
     stock: 10,
     images: [
       {
@@ -45,8 +47,10 @@ export const sampleItems = [
   {
     id: 2,
     name: "Barcelona Home 25/26",
-    description: "Season 25-26",
-    price: "Rs. 999.00",
+    season: "25-26",
+    mrp: "Rs. 1499.00",
+    price: "Rs. 899.00",
+    off_percentage: 40,
     sku: "BAR2526HOME",
     category_id: "",
     type: "player",
