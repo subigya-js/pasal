@@ -9,7 +9,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
 
     if (!product) {
         return (
-            <div className="text-center py-10 text-xl font-semibold">
+            <div className="text-center w-full h-[90vh] flex justify-center items-center py-10 text-xl font-semibold">
                 Product not found
             </div>
         );
