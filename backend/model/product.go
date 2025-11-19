@@ -12,7 +12,7 @@ type Product struct {
 	Season        string             `json:"season,omitempty" bson:"season,omitempty"`
 	Mrp           float64            `json:"mrp" bson:"mrp" validate:"required,gt=0"`
 	Price         float64            `json:"price" bson:"price" validate:"required,gt=0"`
-	OffPercentage int             `json:"off_percentage,omitempty" bson:"off_percentage,omitempty"`
+	OffPercentage int                `json:"off_percentage,omitempty" bson:"off_percentage,omitempty"`
 	SKU           string             `json:"sku" bson:"sku" validate:"required"`
 	CategoryID    string             `json:"category_id" bson:"category_id" validate:"required"`
 	Rating        float64            `json:"rating,omitempty" bson:"rating,omitempty"`

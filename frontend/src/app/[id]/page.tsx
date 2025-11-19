@@ -95,7 +95,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
                             )}
 
                             {
-                                product.type == "fan" && (
+                                product.type === "fan" && (
                                     <p className='text-justify text-xs'>
                                         This fan edition jersey pairs official design details with sweat-wicking technology to give you a game-ready or casual wear look inspired by your favourite team. <br /> <br />
 
@@ -111,7 +111,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
                             }
 
                             {
-                                product.type == "player" && (
+                                product.type === "player" && (
                                     <p className='text-justify text-xs'>
                                         This one pairs authentic design details with lightweight, quick-drying fabric to help keep the world&apos;s biggest football stars cool and comfortable on the pitch. This product is made from 100% recycled polyester fibers. Advance Fabric technology combines moisture-wicking fabric with advanced engineering and features to help you stay dry and comfortable. Provides additional lightweight & breathability to boost your comfort and performance level. This Authentic jersey are same ones worn by your favorite players on the pitch. Yes, you read it right!
                                     </p>

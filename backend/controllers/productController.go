@@ -274,7 +274,7 @@ func UpdateProduct(c *gin.Context) {
 	}
 
 	if input.OffPercentage != nil {
-		updateDoc["off_percentage"] = input.OffPercentage
+		updateDoc["off_percentage"] = *input.OffPercentage
 	}
 
 	if input.SKU != "" {
@@ -294,7 +294,7 @@ func UpdateProduct(c *gin.Context) {
 	}
 
 	if input.Stock != nil {
-		updateDoc["stock"] = input.Stock
+		updateDoc["stock"] = *input.Stock
 	}
 
 	if len(input.Images) > 0 {
