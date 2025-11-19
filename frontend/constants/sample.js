@@ -8,9 +8,9 @@ export const sampleItems = [
     off_percentage: "60",
     sku: "RM2526HOME",
     category_id: "",
+    rating: 4.5,
     type: "fan",
     sizes: ["S - 38", "M - 40", "L - 42", "XL - 44", "XXL - 46"],
-    rating: 4.5,
     stock: 10,
     images: [
       {

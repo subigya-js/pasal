@@ -19,13 +19,18 @@ func CreateProduct(c *gin.Context) {
 	productCollection := database.GetCollection("products")
 
 	var input struct {
-		Name        string   `json:"name" binding:"required,min=2"`
-		Description string   `json:"description"`
-		Price       float64  `json:"price" binding:"required,gt=0"`
-		SKU         string   `json:"sku" binding:"required"`
-		Category    string   `json:"category" binding:"required"`
-		Stock       int      `json:"stock" binding:"gte=0"`
-		Images      []string `json:"images"`
+		Name          string   `json:"name" binding:"required,min=2"`
+		Season        string   `json:"season"`
+		Mrp           float64  `json:"mrp" binding:"required,gt=0"`
+		Price         float64  `json:"price" binding:"required,gt=0"`
+		OffPercentage int      `json:"off_percentage"`
+		SKU           string   `json:"sku" binding:"required"`
+		Category      string   `json:"category" binding:"required"`
+		Type          string   `json:"type" binding:"required"`
+		Sizes         []string `json:"sizes" binding:"required,dive,required"`
+		Stock         int      `json:"stock" binding:"gte=0"`
+		Images        []string `json:"images"`
+		IsActive      bool     `json:"is_active" binding:"required"`
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -50,18 +55,22 @@ func CreateProduct(c *gin.Context) {
 
 	// Create product
 	product := model.Product{
-		ID:          primitive.NewObjectID(),
-		Name:        input.Name,
-		Description: input.Description,
-		Price:       input.Price,
-		SKU:         input.SKU,
-		CategoryID:  input.Category, // store category name
-		Stock:       input.Stock,
-		Images:      input.Images,
-		Rating:      0.0,
-		IsActive:    true,
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
+		ID:            primitive.NewObjectID(),
+		Name:          input.Name,
+		Season:        input.Season,
+		Mrp:           input.Mrp,
+		Price:         input.Price,
+		OffPercentage: input.OffPercentage,
+		SKU:           input.SKU,
+		CategoryID:    input.Category, // store category name
+		Rating:        0.0,
+		Type:          input.Type,
+		Sizes:         input.Sizes,
+		Stock:         input.Stock,
+		Images:        input.Images,
+		IsActive:      input.IsActive,
+		CreatedAt:     time.Now(),
+		UpdatedAt:     time.Now(),
 	}
 
 	res, err := productCollection.InsertOne(ctx, product)
@@ -195,13 +204,17 @@ func UpdateProduct(c *gin.Context) {
 
 	// Input struct for partial updates (all fields optional)
 	var input struct {
-		Name        string   `json:"name,omitempty" binding:"omitempty,min=2"`
-		Description string   `json:"description,omitempty"`
-		Price       float64  `json:"price,omitempty" binding:"omitempty,gt=0"`
-		SKU         string   `json:"sku,omitempty"`
-		Category    string   `json:"category,omitempty"`
-		Stock       *int     `json:"stock,omitempty" binding:"omitempty,gte=0"`
-		Images      []string `json:"images,omitempty"`
+		Name          string   `json:"name,omitempty" binding:"omitempty,min=2"`
+		Season        string   `json:"season,omitempty"`
+		Mrp           float64  `json:"mrp,omitempty" binding:"omitempty,gt=0"`
+		Price         float64  `json:"price,omitempty" binding:"omitempty,gt=0"`
+		OffPercentage *int     `json:"off_percentage,omitempty" binding:"omitempty,gte=0,lte=100"`
+		SKU           string   `json:"sku,omitempty"`
+		Category      string   `json:"category,omitempty"`
+		Type          string   `json:"type,omitempty"`
+		Sizes         []string `json:"sizes,omitempty" binding:"omitempty,dive,required"`
+		Stock         *int     `json:"stock,omitempty" binding:"omitempty,gte=0"`
+		Images        []string `json:"images,omitempty"`
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -248,12 +261,20 @@ func UpdateProduct(c *gin.Context) {
 		updateDoc["name"] = input.Name
 	}
 
-	if input.Description != "" {
-		updateDoc["description"] = input.Description
+	if input.Season != "" {
+		updateDoc["season"] = input.Season
+	}
+
+	if input.Mrp > 0 {
+		updateDoc["mrp"] = input.Mrp
 	}
 
 	if input.Price > 0 {
 		updateDoc["price"] = input.Price
+	}
+
+	if input.OffPercentage != nil {
+		updateDoc["off_percentage"] = input.OffPercentage
 	}
 
 	if input.SKU != "" {
@@ -262,6 +283,14 @@ func UpdateProduct(c *gin.Context) {
 
 	if input.Category != "" {
 		updateDoc["category_id"] = input.Category
+	}
+
+	if input.Type != "" {
+		updateDoc["type"] = input.Type
+	}
+
+	if len(input.Sizes) > 0 {
+		updateDoc["sizes"] = input.Sizes
 	}
 
 	if input.Stock != nil {
