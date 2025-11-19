@@ -42,9 +42,10 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
                     <div className="flex flex-col gap-10">
                         <div>
                             <p className="text-gray-700 text-3xl font-bold">{product.name}</p>
+                            <p className="text-gray-600 mt-1 text-md">Season {product.season}</p>
 
                             <p className="text-gray-600 font-bold flex gap-10 items-center text-2xl mt-3">
-                                {product.price} <span className="text-gray-500 font-normal text-lg"><span className="line-through">Rs. 1999.00</span> <span className="text-green-600">(60% OFF)</span></span>
+                                {product.price} <span className="text-gray-500 font-normal text-lg"><span className="line-through">{product.mrp}</span> <span className="text-green-600">({product.off_percentage}% OFF)</span></span>
                             </p>
                         </div>
 

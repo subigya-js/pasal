@@ -2,7 +2,7 @@ export const sampleItems = [
   {
     id: 1,
     name: "Real Madrid Home 25/26",
-    description: "Season 25-26",
+    season: "25-26",
     mrp: "Rs. 1999.00",
     price: "Rs. 899.00",
     off_percentage: "60",
@@ -47,7 +47,7 @@ export const sampleItems = [
   {
     id: 2,
     name: "Barcelona Home 25/26",
-    description: "Season 25-26",
+    season: "25-26",
     mrp: "Rs. 1499.00",
     price: "Rs. 899.00",
     off_percentage: "40",
