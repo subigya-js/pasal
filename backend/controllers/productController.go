@@ -4,6 +4,7 @@ import (
 	"backend/database"
 	"backend/model"
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -34,6 +35,7 @@ func CreateProduct(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
+		fmt.Println("Error binding JSON:", err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err.Error(),
 		})
@@ -47,6 +49,7 @@ func CreateProduct(c *gin.Context) {
 	var existingProduct model.Product
 	err := productCollection.FindOne(ctx, bson.M{"sku": input.SKU}).Decode(&existingProduct)
 	if err == nil {
+		fmt.Println("SKU already exists:", input.SKU)
 		c.JSON(http.StatusConflict, gin.H{
 			"error": "SKU already exists.",
 		})
@@ -75,6 +78,7 @@ func CreateProduct(c *gin.Context) {
 
 	res, err := productCollection.InsertOne(ctx, product)
 	if err != nil {
+		fmt.Println("Failed to create product:", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to create product.",
 		})
