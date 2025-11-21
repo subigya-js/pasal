@@ -1,5 +1,4 @@
 import { Product } from "@/types/product";
-import { IndividualProduct } from "@/types/product";
 import { BASE_URL } from "../../../constants/constants";
 
 // CREATE
@@ -34,7 +33,7 @@ export async function getAllProducts(): Promise<
 export async function getProductById(id: string): Promise<
     {
         message: string;
-        product: IndividualProduct;
+        product: Product;
         status: string;
     }> {
     const res = await fetch(`${BASE_URL}/get-product/${id}`, {
