@@ -1,11 +1,12 @@
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
-import { sampleItems } from "../../../constants/sample";
+import { getProductById } from '@/lib/api/products';
 
 export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
 
-    const product = sampleItems.find(item => item.id === Number(id));
+    const res = await getProductById(id);
+    const product = res.product;
 
     if (!product) {
         return (
@@ -23,11 +24,11 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
             {/* 2x2 Image Grid */}
             <div className="flex justify-between gap-10">
                 <div className="grid grid-cols-2 gap-4 mb-6 w-[60%] ">
-                    {product.images.map((img, index) => (
+                    {product.images.map((url, index) => (
                         <div key={index} className="relative overflow-hidden rounded bg-gray-100 border border-gray-400 hover:scale-105 duration-300 transition-transform">
                             <Image
-                                src={img.url}
-                                alt={img.alt}
+                                src={url}
+                                alt={`Product Image ${index + 1}`}
                                 width={500}
                                 height={500}
                                 className="w-full h-full object-cover"
@@ -44,7 +45,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
                             <p className="text-gray-600 mt-1 text-md">Season {product.season}</p>
 
                             <p className="text-gray-600 font-bold flex gap-10 items-center text-2xl mt-3">
-                                {product.price} <span className="text-gray-500 font-normal text-lg"><span className="line-through">{product.mrp}</span> <span className="text-green-600">({product.off_percentage}% OFF)</span></span>
+                               Rs. {product.price} <span className="text-gray-500 font-normal text-lg"><span className="line-through">Rs. {product.mrp}</span> <span className="text-green-600">({product.off_percentage}% OFF)</span></span>
                             </p>
                         </div>
 

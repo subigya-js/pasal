@@ -30,7 +30,12 @@ export async function getAllProducts(): Promise<
 }
 
 // GET ONE
-export async function getProductById(id: string): Promise<Product> {
+export async function getProductById(id: string): Promise<
+    {
+        message: string;
+        product: Product;
+        status: string;
+    }> {
     const res = await fetch(`${BASE_URL}/get-product/${id}`, {
         method: "GET",
         cache: "no-store",
