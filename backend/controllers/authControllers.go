@@ -115,15 +115,20 @@ func Login(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"token": token,
+		"user": gin.H{
+			"userID": user.ID.Hex(),
+			"name":   user.Name,
+			"email":  user.Email,
+		},
 	})
 }
 
-// GET /dashboard
+// GET /profile
 func Dashboard(c *gin.Context) {
 	email, _ := c.Get("email")
 	name, _ := c.Get("name")
 	userID, _ := c.Get("userID")
-	
+
 	c.JSON(http.StatusOK, gin.H{
 		"userID": userID,
 		"email":  email,

@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { FiHeart, FiMenu, FiShoppingCart, FiUser } from "react-icons/fi";
@@ -8,9 +9,7 @@ import { RxCross1 } from "react-icons/rx";
 const Navbar = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
-
-    // TODO: Replace this with actual authentication state from your auth context/hook
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const { isLoggedIn } = useAuth();
 
     const toggleMenu = () => {
         setIsMenuOpen(prev => !prev);
