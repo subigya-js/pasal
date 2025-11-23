@@ -24,7 +24,7 @@ export async function signup(data: SignupRequest): Promise<SignupResponse> {
         }
 
         return res.json();
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Signup error:", error);
         // Check if it's a network error (backend not running or CORS issue)
         if (error instanceof TypeError) {
@@ -51,7 +51,7 @@ export async function login(data: LoginRequest): Promise<AuthResponse> {
         }
 
         return res.json();
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Login error:", error);
         // Check if it's a network error (backend not running or CORS issue)
         if (error instanceof TypeError) {
@@ -81,7 +81,7 @@ export async function getUserProfile(token: string): Promise<UserProfileResponse
         }
 
         return res.json();
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Get user profile error:", error);
         // Check if it's a network error (backend not running or CORS issue)
         if (error instanceof TypeError) {

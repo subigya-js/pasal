@@ -41,8 +41,9 @@ export default function SignupPage() {
             await signup(formData);
             // Redirect to home page on successful signup
             router.push('/');
-        } catch (err: any) {
-            setError(err.message || 'Failed to sign up. Please try again.');
+        } catch (err: unknown) {
+            const errorMessage = err instanceof Error ? err.message : 'Failed to sign up. Please try again.';
+            setError(errorMessage);
         } finally {
             setIsLoading(false);
         }

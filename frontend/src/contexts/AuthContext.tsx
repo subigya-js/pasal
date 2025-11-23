@@ -45,11 +45,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                         email: profile.email,
                     });
                 }
-            } catch (error: any) {
+            } catch (error: unknown) {
                 console.error('[AuthContext] Error loading auth:', error);
                 // Only clear token if it's an authentication error (401)
                 // Don't clear on network errors
-                if (error.message?.includes('Unable to connect to the server')) {
+                const errorMessage = error instanceof Error ? error.message : '';
+                if (errorMessage.includes('Unable to connect to the server')) {
                     console.log('[AuthContext] Network error, keeping token for retry');
                     // Keep the token in localStorage for retry
                     const storedToken = localStorage.getItem('auth_token');
