@@ -25,10 +25,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         const loadAuth = async () => {
             try {
+                // Ensure we're in the browser
+                if (typeof window === 'undefined') {
+                    setIsLoading(false);
+                    return;
+                }
+
                 const storedToken = localStorage.getItem('auth_token');
+                console.log('[AuthContext] Loading auth, token exists:', !!storedToken);
+
                 if (storedToken) {
                     // Validate token by fetching user profile
                     const profile = await getUserProfile(storedToken);
+                    console.log('[AuthContext] Profile loaded successfully:', profile);
                     setToken(storedToken);
                     setUser({
                         id: profile.userID,
@@ -36,11 +45,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                         email: profile.email,
                     });
                 }
-            } catch (error) {
-                // Token is invalid, clear it
-                localStorage.removeItem('auth_token');
+            } catch (error: any) {
+                console.error('[AuthContext] Error loading auth:', error);
+                // Only clear token if it's an authentication error (401)
+                // Don't clear on network errors
+                if (error.message?.includes('Unable to connect to the server')) {
+                    console.log('[AuthContext] Network error, keeping token for retry');
+                    // Keep the token in localStorage for retry
+                    const storedToken = localStorage.getItem('auth_token');
+                    if (storedToken) {
+                        setToken(storedToken);
+                    }
+                } else {
+                    // Authentication error - clear the invalid token
+                    console.log('[AuthContext] Clearing invalid token');
+                    localStorage.removeItem('auth_token');
+                    setToken(null);
+                    setUser(null);
+                }
             } finally {
                 setIsLoading(false);
+                console.log('[AuthContext] Auth loading complete');
             }
         };
 

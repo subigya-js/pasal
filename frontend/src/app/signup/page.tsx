@@ -3,11 +3,18 @@
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function SignupPage() {
     const router = useRouter();
-    const { signup } = useAuth();
+    const { signup, isLoggedIn, isLoading: isAuthLoading } = useAuth();
+
+    // Redirect to home if already logged in
+    useEffect(() => {
+        if (!isAuthLoading && isLoggedIn) {
+            router.replace('/');
+        }
+    }, [isLoggedIn, isAuthLoading, router]);
 
     const [formData, setFormData] = useState({
         name: '',

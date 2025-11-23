@@ -1,5 +1,6 @@
 import Navbar from "@/components/LandingPage/Navbar";
 import { AuthProvider } from "@/contexts/AuthContext";
+import AuthDebug from "@/components/AuthDebug";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -32,6 +33,7 @@ export default function RootLayout({
         <AuthProvider>
           <Navbar />
           {children}
+          <AuthDebug />
         </AuthProvider>
       </body>
     </html>
