@@ -116,9 +116,9 @@ func Login(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"token": token,
 		"user": gin.H{
-			"userID": user.ID.Hex(),
-			"name":   user.Name,
-			"email":  user.Email,
+			"id":    user.ID.Hex(),
+			"name":  user.Name,
+			"email": user.Email,
 		},
 	})
 }
@@ -130,8 +130,8 @@ func Dashboard(c *gin.Context) {
 	userID, _ := c.Get("userID")
 
 	c.JSON(http.StatusOK, gin.H{
-		"userID": userID,
-		"email":  email,
-		"name":   name,
+		"id":    userID,
+		"email": email,
+		"name":  name,
 	})
 }
