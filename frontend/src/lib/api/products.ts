@@ -3,7 +3,7 @@ import { BASE_URL } from "../../../constants/constants";
 
 // CREATE
 export async function createProduct(form: FormData) {
-    const res = await fetch(`${BASE_URL}/create-product`, {
+    const res = await fetch(`${BASE_URL}/api/create-product`, {
         method: "POST",
         body: form,
         credentials: "include",
@@ -20,7 +20,7 @@ export async function getAllProducts(): Promise<
         products: Product[];
         status: string;
     }> {
-    const res = await fetch(`${BASE_URL}/get-all-products`, {
+    const res = await fetch(`${BASE_URL}/api/get-all-products`, {
         method: "GET",
         cache: "no-store",
     });
@@ -36,7 +36,7 @@ export async function getProductById(id: string): Promise<
         product: Product;
         status: string;
     }> {
-    const res = await fetch(`${BASE_URL}/get-product/${id}`, {
+    const res = await fetch(`${BASE_URL}/api/get-product/${id}`, {
         method: "GET",
         cache: "no-store",
     });
@@ -47,7 +47,7 @@ export async function getProductById(id: string): Promise<
 
 // UPDATE
 export async function updateProduct(id: string, form: FormData) {
-    const res = await fetch(`${BASE_URL}/update-product/${id}`, {
+    const res = await fetch(`${BASE_URL}/api/update-product/${id}`, {
         method: "PUT",
         body: form,
         credentials: "include",
@@ -59,7 +59,7 @@ export async function updateProduct(id: string, form: FormData) {
 
 // DELETE
 export async function deleteProduct(id: string) {
-    const res = await fetch(`${BASE_URL}/delete-product/${id}`, {
+    const res = await fetch(`${BASE_URL}/api/delete-product/${id}`, {
         method: "DELETE",
         credentials: "include",
     });

@@ -1,13 +1,21 @@
 "use client";
 
+import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
-import { FiHeart, FiShoppingCart, FiUser, FiMenu } from "react-icons/fi";
-import { RxCross1 } from "react-icons/rx";
 import { useEffect, useRef, useState } from 'react';
+import { FiHeart, FiMenu, FiShoppingCart, FiUser } from "react-icons/fi";
+import { RxCross1 } from "react-icons/rx";
 
 const Navbar = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
+    const { isLoggedIn } = useAuth();
+
+    // Only render auth-dependent UI after mounting on client
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     const toggleMenu = () => {
         setIsMenuOpen(prev => !prev);
@@ -55,7 +63,20 @@ const Navbar = () => {
                     />
                     <Link href="/cart" aria-label='Cart'><FiShoppingCart size={20} className='cursor-pointer' /></Link>
                     <Link href="/favorites" aria-label='Favorites'><FiHeart size={20} className='cursor-pointer' /></Link>
-                    <Link href="/profile" aria-label='Profile'><FiUser size={20} className='cursor-pointer' /></Link>
+                    {isMounted ? (
+                        isLoggedIn ? (
+                            <Link href="/profile" aria-label='Profile'><FiUser size={20} className='cursor-pointer' /></Link>
+                        ) : (
+                            <Link
+                                href="/login"
+                                className='px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors duration-200'
+                            >
+                                Login
+                            </Link>
+                        )
+                    ) : (
+                        <div className='h-10'></div>
+                    )}
                 </div>
 
                 {/* Mobile menu toggle */}
@@ -86,7 +107,18 @@ const Navbar = () => {
                         />
                         <Link href="/cart" aria-label='Cart' className='flex items-center'><FiShoppingCart size={20} className='mr-2' /> Cart</Link>
                         <Link href="/favorites" aria-label='Favorites' className='flex items-center'><FiHeart size={20} className='mr-2' /> Favorites</Link>
-                        <Link href="/profile" aria-label='Profile' className='flex items-center'><FiUser size={20} className='mr-2' /> Profile</Link>
+                        {isMounted && (
+                            isLoggedIn ? (
+                                <Link href="/profile" aria-label='Profile' className='flex items-center'><FiUser size={20} className='mr-2' /> Profile</Link>
+                            ) : (
+                                <Link
+                                    href="/login"
+                                    className='block w-full px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors duration-200 text-center'
+                                >
+                                    Login
+                                </Link>
+                            )
+                        )}
                     </div>
                 </div>
             </div>
