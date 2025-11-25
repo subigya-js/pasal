@@ -85,19 +85,6 @@ export default function ProfilePage() {
                                         </div>
                                     </div>
                                 </div>
-
-                                {/* User ID Card */}
-                                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 border border-green-200 md:col-span-2">
-                                    <div className="flex items-center space-x-3">
-                                        <div className="p-3 bg-green-500 rounded-lg">
-                                            <span className="text-white font-bold text-xl">#</span>
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-medium text-green-600">User ID</p>
-                                            <p className="text-lg font-mono font-semibold text-gray-900">{user.id}</p>
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
 
                             {/* Action Buttons */}
