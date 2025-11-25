@@ -8,9 +8,11 @@ import { RxCross1 } from "react-icons/rx";
 
 const Navbar = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
-    const { isLoggedIn } = useAuth();
+    const userDropdownRef = useRef<HTMLDivElement>(null);
+    const { isLoggedIn, logout } = useAuth();
 
     // Only render auth-dependent UI after mounting on client
     useEffect(() => {
@@ -21,21 +23,28 @@ const Navbar = () => {
         setIsMenuOpen(prev => !prev);
     };
 
+    const toggleUserDropdown = () => {
+        setIsUserDropdownOpen(prev => !prev);
+    };
+
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
                 setIsMenuOpen(false);
             }
+            if (userDropdownRef.current && !userDropdownRef.current.contains(event.target as Node)) {
+                setIsUserDropdownOpen(false);
+            }
         };
 
-        if (isMenuOpen) {
+        if (isMenuOpen || isUserDropdownOpen) {
             document.addEventListener("mousedown", handleClickOutside);
         }
 
         return () => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
-    }, [isMenuOpen]);
+    }, [isMenuOpen, isUserDropdownOpen]);
 
     return (
         <div className='relative'>
@@ -65,7 +74,36 @@ const Navbar = () => {
                     <Link href="/favorites" aria-label='Favorites'><FiHeart size={20} className='cursor-pointer' /></Link>
                     {isMounted ? (
                         isLoggedIn ? (
-                            <Link href="/profile" aria-label='Profile'><FiUser size={20} className='cursor-pointer' /></Link>
+                            <div className='relative' ref={userDropdownRef}>
+                                <button
+                                    onClick={toggleUserDropdown}
+                                    aria-label='User menu'
+                                    className='cursor-pointer hover:opacity-80 transition-opacity'
+                                >
+                                    <FiUser size={20} />
+                                </button>
+
+                                {isUserDropdownOpen && (
+                                    <div className='absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50'>
+                                        <Link
+                                            href="/profile"
+                                            className='block px-4 py-2 text-gray-800 hover:bg-gray-100 transition-colors'
+                                            onClick={() => setIsUserDropdownOpen(false)}
+                                        >
+                                            Profile
+                                        </Link>
+                                        <button
+                                            onClick={() => {
+                                                logout();
+                                                setIsUserDropdownOpen(false);
+                                            }}
+                                            className='w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 transition-colors'
+                                        >
+                                            Sign Out
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
                         ) : (
                             <Link
                                 href="/login"
@@ -109,7 +147,25 @@ const Navbar = () => {
                         <Link href="/favorites" aria-label='Favorites' className='flex items-center'><FiHeart size={20} className='mr-2' /> Favorites</Link>
                         {isMounted && (
                             isLoggedIn ? (
-                                <Link href="/profile" aria-label='Profile' className='flex items-center'><FiUser size={20} className='mr-2' /> Profile</Link>
+                                <>
+                                    <Link
+                                        href="/profile"
+                                        aria-label='Profile'
+                                        className='flex items-center px-4 py-2 hover:bg-gray-100 rounded-lg transition-colors'
+                                        onClick={() => setIsMenuOpen(false)}
+                                    >
+                                        <FiUser size={20} className='mr-2 mt-4' /> Profile
+                                    </Link>
+                                    <button
+                                        onClick={() => {
+                                            logout();
+                                            setIsMenuOpen(false);
+                                        }}
+                                        className='w-full flex items-center px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors'
+                                    >
+                                        Sign Out
+                                    </button>
+                                </>
                             ) : (
                                 <Link
                                     href="/login"
