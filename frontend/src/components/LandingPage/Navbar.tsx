@@ -1,10 +1,12 @@
 "use client";
 
+import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { FiHeart, FiMenu, FiShoppingCart, FiUser } from "react-icons/fi";
 import { RxCross1 } from "react-icons/rx";
+import { Input } from '../ui/input';
 
 const Navbar = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -65,7 +67,7 @@ const Navbar = () => {
 
                 {/* Right - Hidden on mobile */}
                 <div className='hidden md:flex justify-end items-center gap-6'>
-                    <input
+                    <Input
                         type="text"
                         placeholder="Search"
                         className='rounded-lg border border-gray-300 px-3 py-1 text-sm h-10'
@@ -75,53 +77,55 @@ const Navbar = () => {
                     {isMounted ? (
                         isLoggedIn ? (
                             <div className='relative' ref={userDropdownRef}>
-                                <button
+                                <Button
                                     onClick={toggleUserDropdown}
-                                    aria-label='User menu'
-                                    className='cursor-pointer hover:opacity-80 transition-opacity'
+                                    variant="default"
+                                    className='cursor-pointer bg-none'
                                 >
-                                    <FiUser size={20} />
-                                </button>
+                                    <FiUser size={28} />
+                                </Button>
 
                                 {isUserDropdownOpen && (
                                     <div className='absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50'>
                                         <Link
                                             href="/profile"
-                                            className='block px-4 py-2 text-gray-800 hover:bg-gray-100 transition-colors'
+                                            className='block px-4 py-2 cursor-pointer'
                                             onClick={() => setIsUserDropdownOpen(false)}
                                         >
                                             Profile
                                         </Link>
-                                        <button
+                                        <Button
                                             onClick={() => {
                                                 logout();
                                                 setIsUserDropdownOpen(false);
                                             }}
-                                            className='w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 transition-colors'
+                                            variant="ghost"
+                                            className='w-full justify-start text-red-600 hover:bg-red-50 hover:text-red-600'
                                         >
                                             Sign Out
-                                        </button>
+                                        </Button>
                                     </div>
                                 )}
                             </div>
                         ) : (
-                            <Link
-                                href="/login"
-                                className='px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors duration-200'
-                            >
-                                Login
-                            </Link>
+                            <Button asChild>
+                                <Link href="/login">
+                                    Login
+                                </Link>
+                            </Button>
                         )
                     ) : (
-                        <div className='h-10'></div>
+                        <div className='h-0'></div>
                     )}
                 </div>
 
                 {/* Mobile menu toggle */}
                 <div className='md:hidden flex items-center gap-4'>
-                    <button onClick={toggleMenu} className='focus:outline-none' aria-label="Toggle menu" aria-expanded={isMenuOpen}>
-                        {isMenuOpen ? <RxCross1 size={24} /> : <FiMenu size={24} />}
-                    </button>
+                    {isMounted && (
+                        <Button onClick={toggleMenu} variant="ghost">
+                            {isMenuOpen ? <RxCross1 size={28} /> : <FiMenu size={28} />}
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -138,7 +142,7 @@ const Navbar = () => {
                         <li className='cursor-pointer hover:scale-105 duration-200'><a href="#teams">Teams</a></li>
                     </ul>
                     <div className='mt-6 space-y-4'>
-                        <input
+                        <Input
                             type="text"
                             placeholder="Search"
                             className='w-full rounded-lg border border-gray-300 px-3 py-2 text-sm h-10'
@@ -151,28 +155,28 @@ const Navbar = () => {
                                     <Link
                                         href="/profile"
                                         aria-label='Profile'
-                                        className='flex items-center px-4 py-2 hover:bg-gray-100 rounded-lg transition-colors'
+                                        className='flex items-center px-4 py-2 hover:bg-gray-900 rounded-lg transition-colors items-center bg-gray-800 text-white'
                                         onClick={() => setIsMenuOpen(false)}
                                     >
-                                        <FiUser size={20} className='mr-2 mt-4' /> Profile
+                                        <FiUser size={20} className='mr-2' /> Profile
                                     </Link>
-                                    <button
+                                    <Button
                                         onClick={() => {
                                             logout();
                                             setIsMenuOpen(false);
                                         }}
-                                        className='w-full flex items-center px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors'
+                                        variant="ghost"
+                                        className='w-full justify-start text-white bg-red-500 hover:bg-red-600 hover:text-white cursor-pointer'
                                     >
                                         Sign Out
-                                    </button>
+                                    </Button>
                                 </>
                             ) : (
-                                <Link
-                                    href="/login"
-                                    className='block w-full px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors duration-200 text-center'
-                                >
-                                    Login
-                                </Link>
+                                <Button asChild className='w-full'>
+                                    <Link href="/login">
+                                        Login
+                                    </Link>
+                                </Button>
                             )
                         )}
                     </div>

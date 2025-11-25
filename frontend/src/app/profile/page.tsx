@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
@@ -89,21 +90,25 @@ export default function ProfilePage() {
 
                             {/* Action Buttons */}
                             <div className="flex flex-col sm:flex-row gap-4 mt-8 pt-6 border-t border-gray-200">
-                                <button
+                                <Button
                                     onClick={() => router.push('/')}
-                                    className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+                                    variant="outline"
+                                    size="lg"
+                                    className="flex-1"
                                 >
                                     Back to Home
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                     onClick={() => {
                                         logout();
                                         router.push('/');
                                     }}
-                                    className="flex-1 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+                                    variant="destructive"
+                                    size="lg"
+                                    className="flex-1"
                                 >
                                     Sign Out
-                                </button>
+                                </Button>
                             </div>
                         </div>
                     </div>

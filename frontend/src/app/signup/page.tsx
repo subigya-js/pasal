@@ -1,5 +1,7 @@
 "use client";
 
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -74,7 +76,7 @@ export default function SignupPage() {
                             <label htmlFor="name" className="block text-sm font-medium text-gray-700">
                                 Full Name
                             </label>
-                            <input
+                            <Input
                                 id="name"
                                 name="name"
                                 type="text"
@@ -91,7 +93,7 @@ export default function SignupPage() {
                             <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                                 Email Address
                             </label>
-                            <input
+                            <Input
                                 id="email"
                                 name="email"
                                 type="email"
@@ -108,7 +110,7 @@ export default function SignupPage() {
                             <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                                 Password
                             </label>
-                            <input
+                            <Input
                                 id="password"
                                 name="password"
                                 type="password"
@@ -123,13 +125,13 @@ export default function SignupPage() {
                         </div>
 
                         {/* Submit Button */}
-                        <button
+                        <Button
                             type="submit"
                             disabled={isLoading}
                             className="w-full bg-black text-white py-3 rounded-lg font-medium hover:bg-gray-800 transition-colors duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed"
                         >
                             {isLoading ? 'Creating account...' : 'Sign Up'}
-                        </button>
+                        </Button>
                     </form>
 
                     {/* Divider */}
