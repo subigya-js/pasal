@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCart } from '@/contexts/CartContext';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { FiHeart, FiMenu, FiShoppingCart, FiUser } from "react-icons/fi";
@@ -15,6 +16,7 @@ const Navbar = () => {
     const menuRef = useRef<HTMLDivElement>(null);
     const userDropdownRef = useRef<HTMLDivElement>(null);
     const { isLoggedIn, logout } = useAuth();
+    const { cartItemCount } = useCart();
 
     // Only render auth-dependent UI after mounting on client
     useEffect(() => {
@@ -72,7 +74,14 @@ const Navbar = () => {
                         placeholder="Search"
                         className='rounded-lg border border-gray-300 px-3 py-1 text-sm h-10'
                     />
-                    <Link href="/cart" aria-label='Cart'><FiShoppingCart size={20} className='cursor-pointer' /></Link>
+                    <Link href="/cart" aria-label='Cart' className='relative'>
+                        <FiShoppingCart size={20} className='cursor-pointer' />
+                        {cartItemCount > 0 && (
+                            <span className='absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center'>
+                                {cartItemCount}
+                            </span>
+                        )}
+                    </Link>
                     <Link href="/favorites" aria-label='Favorites'><FiHeart size={20} className='cursor-pointer' /></Link>
                     {isMounted ? (
                         isLoggedIn ? (
@@ -147,7 +156,15 @@ const Navbar = () => {
                             placeholder="Search"
                             className='w-full rounded-lg border border-gray-300 px-3 py-2 text-sm h-10'
                         />
-                        <Link href="/cart" aria-label='Cart' className='flex items-center'><FiShoppingCart size={20} className='mr-2' /> Cart</Link>
+                        <Link href="/cart" aria-label='Cart' className='flex items-center relative'>
+                            <FiShoppingCart size={20} className='mr-2' />
+                            Cart
+                            {cartItemCount > 0 && (
+                                <span className='ml-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center'>
+                                    {cartItemCount}
+                                </span>
+                            )}
+                        </Link>
                         <Link href="/favorites" aria-label='Favorites' className='flex items-center'><FiHeart size={20} className='mr-2' /> Favorites</Link>
                         {isMounted && (
                             isLoggedIn ? (

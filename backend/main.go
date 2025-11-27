@@ -23,11 +23,11 @@ func main() {
 
 	// Configure CORS
 	router.Use(cors.New(cors.Config{
-		AllowAllOrigins:  true,
+		AllowOrigins:     []string{"http://localhost:3000"}, // Frontend URL
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
-		AllowCredentials: false, // Must be false when AllowAllOrigins is true
+		AllowCredentials: true, // Allow credentials (cookies, authorization headers)
 	}))
 
 	routes.AuthRoutes(router)
