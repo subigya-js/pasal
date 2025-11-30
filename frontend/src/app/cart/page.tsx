@@ -41,8 +41,6 @@ export default function CartPage() {
     };
 
     const handleRemoveItem = async (productId: string) => {
-        if (!confirm('Remove this item from cart?')) return;
-
         setRemovingItems(prev => new Set(prev).add(productId));
         try {
             await removeFromCart(productId);
@@ -59,8 +57,6 @@ export default function CartPage() {
     };
 
     const handleClearCart = async () => {
-        if (!confirm('Clear all items from cart?')) return;
-
         try {
             await clearCart();
         } catch (error) {
@@ -190,19 +186,19 @@ export default function CartPage() {
                                                         size="sm"
                                                         onClick={() => handleQuantityChange(item.product_id, item.quantity - 1)}
                                                         disabled={isUpdating || item.quantity <= 1}
-                                                        className="h-8 w-8 p-0"
+                                                        className="h-8 w-8 p-0 cursor-pointer"
                                                     >
                                                         -
                                                     </Button>
                                                     <span className="w-12 text-center font-medium">
-                                                        {isUpdating ? '...' : item.quantity}
+                                                        {item.quantity}
                                                     </span>
                                                     <Button
                                                         variant="outline"
                                                         size="sm"
                                                         onClick={() => handleQuantityChange(item.product_id, item.quantity + 1)}
                                                         disabled={isUpdating || item.quantity >= product.stock}
-                                                        className="h-8 w-8 p-0"
+                                                        className="h-8 w-8 p-0 cursor-pointer"
                                                     >
                                                         +
                                                     </Button>
@@ -214,7 +210,7 @@ export default function CartPage() {
                                                     size="sm"
                                                     onClick={() => handleRemoveItem(item.product_id)}
                                                     disabled={isRemoving}
-                                                    className="text-red-600 hover:text-red-700 hover:bg-red-50 mt-2"
+                                                    className="text-red-600 hover:text-red-700 hover:bg-red-50 mt-2 cursor-pointer"
                                                 >
                                                     {isRemoving ? 'Removing...' : 'Remove'}
                                                 </Button>
@@ -229,7 +225,7 @@ export default function CartPage() {
                                 <Button
                                     variant="outline"
                                     onClick={handleClearCart}
-                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                    className="text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer"
                                 >
                                     Clear Cart
                                 </Button>
@@ -256,12 +252,12 @@ export default function CartPage() {
                                     </div>
                                 </div>
 
-                                <Button className="w-full mb-3" size="lg">
+                                <Button className="w-full mb-3 cursor-pointer" size="lg">
                                     Proceed to Checkout
                                 </Button>
 
                                 <Button asChild variant="outline" className="w-full">
-                                    <Link href="/">Continue Shopping</Link>
+                                    <Link href="/" className='cursor-pointer'>Continue Shopping</Link>
                                 </Button>
 
                                 {/* Additional Info */}
@@ -270,7 +266,7 @@ export default function CartPage() {
                                         <svg className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                         </svg>
-                                        <span>Free shipping on all orders</span>
+                                        <span>Shipping Charges applies on all orders</span>
                                     </div>
                                     <div className="flex items-start gap-2">
                                         <svg className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -282,7 +278,7 @@ export default function CartPage() {
                                         <svg className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                         </svg>
-                                        <span>Easy returns within 30 days</span>
+                                        <span>Easy returns within 30 days for non-personalized items</span>
                                     </div>
                                 </div>
                             </div>
