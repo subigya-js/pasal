@@ -26,11 +26,18 @@ const Navbar = () => {
 
     // Handle scroll effect
     useEffect(() => {
+        let timeoutId: NodeJS.Timeout | null = null;
         const handleScroll = () => {
-            setIsScrolled(window.scrollY > 10);
+            if (timeoutId) clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+                setIsScrolled(window.scrollY > 10);
+            }, 10);
         };
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+            if (timeoutId) clearTimeout(timeoutId);
+        };
     }, []);
 
     const toggleMenu = () => {
@@ -161,7 +168,7 @@ const Navbar = () => {
                                             variant="ghost"
                                             className='w-full justify-start text-red-600 hover:bg-red-50 hover:text-red-700 px-4 py-3 h-auto font-medium'
                                         >
-                                            <svg className='w-5 h-5 mr-3' fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <svg className='w-5 h-5 mr-3' fill="none" stroke="currentColor" viewBox="0 0 24 24" arial-hidden="true">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                                             </svg>
                                             Sign Out
@@ -274,7 +281,7 @@ const Navbar = () => {
                                         variant="ghost"
                                         className='w-full justify-start text-red-600 hover:bg-red-50 hover:text-red-700 cursor-pointer px-4 py-3 h-auto font-semibold rounded-xl'
                                     >
-                                        <svg className='w-5 h-5 mr-3' fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg className='w-5 h-5 mr-3' fill="none" stroke="currentColor" viewBox="0 0 24 24" arial-hidden="true">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                                         </svg>
                                         Sign Out
