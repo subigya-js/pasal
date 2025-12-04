@@ -1,4 +1,3 @@
-import AuthDebug from "@/components/AuthDebug";
 import Navbar from "@/components/LandingPage/Navbar";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
@@ -35,7 +34,6 @@ export default function RootLayout({
           <CartProvider>
             <Navbar />
             {children}
-            <AuthDebug />
           </CartProvider>
         </AuthProvider>
       </body>
