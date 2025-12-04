@@ -51,7 +51,7 @@ export default async function Home() {
       </div>
 
       {/* Products Section */}
-      <div className="container mx-auto px-4 py-12">
+      <div className="container mx-auto px-4 py-12" id="jerseys">
         <div className="mb-8">
           <h2 className="text-3xl font-bold text-gray-900 mb-2">Our Collection</h2>
           <p className="text-gray-600">Discover our premium selection of football jerseys</p>
