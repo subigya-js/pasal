@@ -46,9 +46,6 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
                                         height={600}
                                         className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700"
                                     />
-                                    <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                        View
-                                    </div>
                                 </div>
                             ))}
                         </div>
