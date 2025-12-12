@@ -5,6 +5,7 @@ import (
 	"backend/helper"
 	"backend/model"
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -26,6 +27,8 @@ func Signup(c *gin.Context) {
 		return
 	}
 
+	fmt.Printf("Received user data: Name=%s, Email=%s, Role=%s\n", user.Name, user.Email, user.Role)
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -44,6 +47,10 @@ func Signup(c *gin.Context) {
 			"error": "Password is required.",
 		})
 		return
+	}
+
+	if user.Role == "" {
+		user.Role = "buyer"
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), 10)
@@ -67,6 +74,8 @@ func Signup(c *gin.Context) {
 
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "User created successfully.",
+		"role":    user.Role,
+		"user":    user,
 	})
 }
 
@@ -119,6 +128,7 @@ func Login(c *gin.Context) {
 			"id":    user.ID.Hex(),
 			"name":  user.Name,
 			"email": user.Email,
+			"role":  user.Role,
 		},
 	})
 }
