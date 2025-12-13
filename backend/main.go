@@ -5,6 +5,8 @@ import (
 	"backend/routes"
 	"log"
 	"os"
+	"strings"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -21,13 +23,21 @@ func main() {
 
 	router := gin.Default()
 
-	// Configure CORS
+	// Add CORS middleware BEFORE your routes
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000"}, // Frontend URL
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
-		ExposeHeaders:    []string{"Content-Length"},
-		AllowCredentials: true, // Allow credentials (cookies, authorization headers)
+		AllowOriginFunc: func(origin string) bool {
+			// Allow any localhost origin during development
+			return strings.HasPrefix(origin, "http://localhost:") ||
+				strings.HasPrefix(origin, "http://127.0.0.1:")
+		},
+		AllowMethods: []string{
+			"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS",
+		},
+		AllowHeaders: []string{
+			"Origin", "Content-Type", "Authorization",
+		},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
 	}))
 
 	routes.AuthRoutes(router)

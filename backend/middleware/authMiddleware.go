@@ -18,7 +18,7 @@ import (
 
 func AuthMiddleware() gin.HandlerFunc {
 	validate := validator.New()
-	
+
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
@@ -83,6 +83,7 @@ func AuthMiddleware() gin.HandlerFunc {
 		c.Set("userID", user.ID.Hex())
 		c.Set("email", user.Email)
 		c.Set("name", user.Name)
+		c.Set("role", user.Role)
 		c.Next()
 	}
 }
