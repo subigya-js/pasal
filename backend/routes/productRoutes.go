@@ -15,8 +15,8 @@ func ProductRoutes(r *gin.Engine) {
 	admin := r.Group("/api")
 	admin.Use(middleware.AuthMiddleware(), middleware.AdminOnly())
 	{
-		admin.POST("/api/create-product", controllers.CreateProduct)
-		admin.PUT("/api/update-product/:id", controllers.UpdateProduct)
-		admin.DELETE("/api/delete-product/:id", controllers.DeleteProduct)
+		admin.POST("/create-product", controllers.CreateProduct)
+		admin.PUT("/update-product/:id", controllers.UpdateProduct)
+		admin.DELETE("/delete-product/:id", controllers.DeleteProduct)
 	}
 }

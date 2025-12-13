@@ -27,6 +27,7 @@ func CreateProduct(c *gin.Context) {
 		SKU           string   `json:"sku" binding:"required"`
 		Category      string   `json:"category" binding:"required"`
 		Type          string   `json:"type" binding:"required"`
+		Team          string   `json:"team"`
 		Sizes         []string `json:"sizes" binding:"required,dive,required"`
 		Stock         int      `json:"stock" binding:"gte=0"`
 		Images        []string `json:"images"`
@@ -67,6 +68,7 @@ func CreateProduct(c *gin.Context) {
 		CategoryID:    input.Category, // store category name
 		Rating:        0.0,
 		Type:          input.Type,
+		Team:          input.Team,
 		Sizes:         input.Sizes,
 		Stock:         input.Stock,
 		Images:        input.Images,
@@ -215,6 +217,7 @@ func UpdateProduct(c *gin.Context) {
 		SKU           string   `json:"sku,omitempty"`
 		Category      string   `json:"category,omitempty"`
 		Type          string   `json:"type,omitempty"`
+		Team          string   `json:"team,omitempty"`
 		Sizes         []string `json:"sizes,omitempty" binding:"omitempty,dive,required"`
 		Stock         *int     `json:"stock,omitempty" binding:"omitempty,gte=0"`
 		Images        []string `json:"images,omitempty"`
@@ -290,6 +293,10 @@ func UpdateProduct(c *gin.Context) {
 
 	if input.Type != "" {
 		updateDoc["type"] = input.Type
+	}
+
+	if input.Team != "" {
+		updateDoc["team"] = input.Team
 	}
 
 	if len(input.Sizes) > 0 {

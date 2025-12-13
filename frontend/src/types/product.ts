@@ -8,6 +8,7 @@ export interface Product {
   sku: string;
   category_id: string;
   type: string;
+  team: string;
   sizes: string[];
   stock: number;
   images: string[];
