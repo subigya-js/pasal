@@ -17,6 +17,7 @@ type Product struct {
 	CategoryID    string             `json:"category_id" bson:"category_id" validate:"required"`
 	Rating        float64            `json:"rating,omitempty" bson:"rating,omitempty"`
 	Type          string             `json:"type" bson:"type" validate:"required"`
+	Team          string             `json:"team,omitempty" bson:"team,omitempty"`
 	Sizes         []string           `json:"sizes" bson:"sizes" validate:"required,dive,required"`
 	Stock         int                `json:"stock" bson:"stock" validate:"gte=0"`
 	Images        []string           `json:"images,omitempty" bson:"images,omitempty"`
