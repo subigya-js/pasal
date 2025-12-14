@@ -4,13 +4,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 interface TeamPageProps {
-    params: {
+    params: Promise<{
         teamName: string;
-    };
+    }>;
 }
 
 export default async function TeamPage({ params }: TeamPageProps) {
-    const { teamName } = params;
+    const { teamName } = await params;
 
     // Decode the team name from URL
     const decodedTeamName = decodeURIComponent(teamName);
