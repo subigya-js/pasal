@@ -1,3 +1,4 @@
+import TeamsSection from "@/components/LandingPage/TeamsSection";
 import ProductCard from "@/components/ProductCard";
 import { getAllProducts } from "@/lib/api/products";
 
@@ -69,6 +70,9 @@ export default async function Home() {
           ))}
         </div>
       </div>
+
+      {/* Teams Section */}
+      <TeamsSection />
     </div>
   );
 }

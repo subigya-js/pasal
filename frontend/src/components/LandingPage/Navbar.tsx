@@ -3,7 +3,10 @@
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
+import { getAllProducts } from '@/lib/api/products';
+import { Product } from '@/types/product';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { FiHeart, FiMenu, FiShoppingCart, FiUser } from "react-icons/fi";
 import { RxCross1 } from "react-icons/rx";
@@ -14,15 +17,54 @@ const Navbar = () => {
     const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState<Product[]>([]);
+    const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false);
+    const [allProducts, setAllProducts] = useState<Product[]>([]);
     const menuRef = useRef<HTMLDivElement>(null);
     const userDropdownRef = useRef<HTMLDivElement>(null);
+    const searchDropdownRef = useRef<HTMLDivElement>(null);
     const { isLoggedIn, logout } = useAuth();
     const { cartItemCount } = useCart();
+    const router = useRouter();
 
     // Only render auth-dependent UI after mounting on client
     useEffect(() => {
         setIsMounted(true);
     }, []);
+
+    // Fetch all products on mount
+    useEffect(() => {
+        const fetchProducts = async () => {
+            try {
+                const response = await getAllProducts();
+                setAllProducts(response.products);
+            } catch (error) {
+                console.error('Failed to fetch products:', error);
+            }
+        };
+        fetchProducts();
+    }, []);
+
+    // Handle search with debouncing
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            if (searchQuery.trim() === '') {
+                setSearchResults([]);
+                setIsSearchDropdownOpen(false);
+                return;
+            }
+
+            // Filter products by name (case-insensitive)
+            const filtered = allProducts.filter(product =>
+                product.name.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+            setSearchResults(filtered);
+            setIsSearchDropdownOpen(filtered.length > 0);
+        }, 300); // 300ms debounce
+
+        return () => clearTimeout(timeoutId);
+    }, [searchQuery, allProducts]);
 
     // Handle scroll effect
     useEffect(() => {
@@ -56,22 +98,25 @@ const Navbar = () => {
             if (userDropdownRef.current && !userDropdownRef.current.contains(event.target as Node)) {
                 setIsUserDropdownOpen(false);
             }
+            if (searchDropdownRef.current && !searchDropdownRef.current.contains(event.target as Node)) {
+                setIsSearchDropdownOpen(false);
+            }
         };
 
-        if (isMenuOpen || isUserDropdownOpen) {
+        if (isMenuOpen || isUserDropdownOpen || isSearchDropdownOpen) {
             document.addEventListener("mousedown", handleClickOutside);
         }
 
         return () => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
-    }, [isMenuOpen, isUserDropdownOpen]);
+    }, [isMenuOpen, isUserDropdownOpen, isSearchDropdownOpen]);
 
     return (
         <div className='relative'>
             <div className={`fixed top-0 left-0 right-0 z-40 px-4 md:px-10 flex items-center justify-between h-16 w-full transition-all duration-300 ${isScrolled
-                    ? 'bg-white/95 backdrop-blur-md shadow-lg'
-                    : 'bg-white shadow-md'
+                ? 'bg-white/95 backdrop-blur-md shadow-lg'
+                : 'bg-white shadow-md'
                 }`}>
                 {/* Left */}
                 <div>
@@ -106,15 +151,64 @@ const Navbar = () => {
 
                 {/* Right - Hidden on mobile */}
                 <div className='hidden md:flex justify-end items-center gap-5'>
-                    <div className='relative'>
+                    <div className='relative' ref={searchDropdownRef}>
                         <Input
                             type="text"
                             placeholder="Search jerseys..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
                             className='rounded-xl border-2 border-gray-200 focus:border-gray-400 px-4 py-2 text-sm h-10 w-56 transition-all duration-300 focus:w-64'
                         />
-                        <svg className='absolute right-3 top-2.5 w-5 h-5 text-gray-400' fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className='absolute right-3 top-2.5 w-5 h-5 text-gray-400 pointer-events-none' fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
+
+                        {/* Search Results Dropdown */}
+                        {isSearchDropdownOpen && searchResults.length > 0 && (
+                            <div className='absolute top-full mt-2 w-96 bg-white rounded-xl shadow-2xl border border-gray-100 py-2 z-50 max-h-96 overflow-y-auto'>
+                                <div className='px-4 py-2 text-sm text-gray-500 border-b border-gray-100'>
+                                    {searchResults.length} result{searchResults.length !== 1 ? 's' : ''} found
+                                </div>
+                                {searchResults.slice(0, 8).map((product) => (
+                                    <div
+                                        key={product.id}
+                                        onClick={() => {
+                                            router.push(`/${product.id}`);
+                                            setSearchQuery('');
+                                            setIsSearchDropdownOpen(false);
+                                        }}
+                                        className='px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors duration-200 flex items-center gap-3'
+                                    >
+                                        {product.images && product.images.length > 0 && (
+                                            <img
+                                                src={product.images[0]}
+                                                alt={product.name}
+                                                className='w-12 h-12 object-cover rounded-lg'
+                                            />
+                                        )}
+                                        <div className='flex-1'>
+                                            <p className='font-medium text-gray-900 text-sm'>{product.name}</p>
+                                            <div className='flex items-center gap-2 mt-1'>
+                                                <span className='text-sm font-semibold text-gray-900'>₹{product.price}</span>
+                                                {product.off_percentage > 0 && (
+                                                    <>
+                                                        <span className='text-xs text-gray-500 line-through'>₹{product.mrp}</span>
+                                                        <span className='text-xs text-green-600 font-medium'>
+                                                            {product.off_percentage}% off
+                                                        </span>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                                {searchResults.length > 8 && (
+                                    <div className='px-4 py-2 text-sm text-gray-500 text-center border-t border-gray-100'>
+                                        Showing 8 of {searchResults.length} results
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     <Link href="/cart" aria-label='Cart' className='relative group'>
@@ -239,11 +333,53 @@ const Navbar = () => {
                             <Input
                                 type="text"
                                 placeholder="Search jerseys..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
                                 className='w-full rounded-xl border-2 border-gray-200 px-4 py-2 text-sm h-11'
                             />
-                            <svg className='absolute right-3 top-3 w-5 h-5 text-gray-400' fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className='absolute right-3 top-3 w-5 h-5 text-gray-400 pointer-events-none' fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
+
+                            {/* Mobile Search Results */}
+                            {isSearchDropdownOpen && searchResults.length > 0 && (
+                                <div className='absolute top-full mt-2 w-full bg-white rounded-xl shadow-2xl border border-gray-100 py-2 z-50 max-h-64 overflow-y-auto'>
+                                    <div className='px-4 py-2 text-sm text-gray-500 border-b border-gray-100'>
+                                        {searchResults.length} result{searchResults.length !== 1 ? 's' : ''} found
+                                    </div>
+                                    {searchResults.slice(0, 5).map((product) => (
+                                        <div
+                                            key={product.id}
+                                            onClick={() => {
+                                                router.push(`/${product.id}`);
+                                                setSearchQuery('');
+                                                setIsSearchDropdownOpen(false);
+                                                setIsMenuOpen(false);
+                                            }}
+                                            className='px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors duration-200 flex items-center gap-3'
+                                        >
+                                            {product.images && product.images.length > 0 && (
+                                                <img
+                                                    src={product.images[0]}
+                                                    alt={product.name}
+                                                    className='w-12 h-12 object-cover rounded-lg'
+                                                />
+                                            )}
+                                            <div className='flex-1'>
+                                                <p className='font-medium text-gray-900 text-sm'>{product.name}</p>
+                                                <div className='flex items-center gap-2 mt-1'>
+                                                    <span className='text-sm font-semibold text-gray-900'>₹{product.price}</span>
+                                                    {product.off_percentage > 0 && (
+                                                        <span className='text-xs text-green-600 font-medium'>
+                                                            {product.off_percentage}% off
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
                         <Link href="/cart" aria-label='Cart' className='flex items-center px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors duration-200 relative'>
