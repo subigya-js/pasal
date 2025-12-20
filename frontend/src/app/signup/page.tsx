@@ -1,55 +1,17 @@
-"use client";
-
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { useAuth } from '@/contexts/AuthContext';
+import { signupAction } from '@/actions/auth';
+import { cookies } from 'next/headers';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { redirect } from 'next/navigation';
+import { SignupForm } from './SignupForm';
 
-export default function SignupPage() {
-    const router = useRouter();
-    const { signup, isLoggedIn, isLoading: isAuthLoading } = useAuth();
+export default async function SignupPage() {
+    // Check if user is already logged in
+    const cookieStore = await cookies();
+    const token = cookieStore.get('auth_token')?.value;
 
-    // Redirect to home if already logged in
-    useEffect(() => {
-        if (!isAuthLoading && isLoggedIn) {
-            router.replace('/');
-        }
-    }, [isLoggedIn, isAuthLoading, router]);
-
-    const [formData, setFormData] = useState({
-        name: '',
-        email: '',
-        password: '',
-    });
-    const [error, setError] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value,
-        });
-        setError(''); // Clear error when user types
-    };
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError('');
-        setIsLoading(true);
-
-        try {
-            await signup(formData);
-            // Redirect to home page on successful signup
-            router.push('/');
-        } catch (err: unknown) {
-            const errorMessage = err instanceof Error ? err.message : 'Failed to sign up. Please try again.';
-            setError(errorMessage);
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    if (token) {
+        redirect('/');
+    }
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 px-4 py-12">
@@ -62,77 +24,8 @@ export default function SignupPage() {
                         <p className="text-gray-600">Join us to start shopping</p>
                     </div>
 
-                    {/* Error Message */}
-                    {error && (
-                        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-                            {error}
-                        </div>
-                    )}
-
                     {/* Form */}
-                    <form onSubmit={handleSubmit} className="space-y-5">
-                        {/* Name */}
-                        <div className="space-y-2">
-                            <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                                Full Name
-                            </label>
-                            <Input
-                                id="name"
-                                name="name"
-                                type="text"
-                                required
-                                value={formData.name}
-                                onChange={handleChange}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all outline-none"
-                                placeholder="John Doe"
-                            />
-                        </div>
-
-                        {/* Email */}
-                        <div className="space-y-2">
-                            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                                Email Address
-                            </label>
-                            <Input
-                                id="email"
-                                name="email"
-                                type="email"
-                                required
-                                value={formData.email}
-                                onChange={handleChange}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all outline-none"
-                                placeholder="you@example.com"
-                            />
-                        </div>
-
-                        {/* Password */}
-                        <div className="space-y-2">
-                            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                                Password
-                            </label>
-                            <Input
-                                id="password"
-                                name="password"
-                                type="password"
-                                required
-                                minLength={6}
-                                value={formData.password}
-                                onChange={handleChange}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all outline-none"
-                                placeholder="••••••••"
-                            />
-                            <p className="text-xs text-gray-500">Must be at least 6 characters</p>
-                        </div>
-
-                        {/* Submit Button */}
-                        <Button
-                            type="submit"
-                            disabled={isLoading}
-                            className="w-full bg-black text-white py-3 rounded-lg font-medium hover:bg-gray-800 transition-colors duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                        >
-                            {isLoading ? 'Creating account...' : 'Sign Up'}
-                        </Button>
-                    </form>
+                    <SignupForm signupAction={signupAction} />
 
                     {/* Divider */}
                     <div className="relative">
