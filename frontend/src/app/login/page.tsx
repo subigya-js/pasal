@@ -1,51 +1,17 @@
-"use client";
-
-import { useAuth } from '@/contexts/AuthContext';
+import { loginAction } from '@/actions/auth';
+import { cookies } from 'next/headers';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { redirect } from 'next/navigation';
+import { LoginForm } from './LoginForm';
 
-export default function LoginPage() {
-    const router = useRouter();
-    const { login, isLoggedIn, isLoading: isAuthLoading } = useAuth();
+export default async function LoginPage() {
+    // Check if user is already logged in
+    const cookieStore = await cookies();
+    const token = cookieStore.get('auth_token')?.value;
 
-    // Redirect to home if already logged in
-    useEffect(() => {
-        if (!isAuthLoading && isLoggedIn) {
-            router.replace('/');
-        }
-    }, [isLoggedIn, isAuthLoading, router]);
-
-    const [formData, setFormData] = useState({
-        email: '',
-        password: '',
-    });
-    const [error, setError] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value,
-        });
-        setError(''); // Clear error when user types
-    };
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError('');
-        setIsLoading(true);
-
-        try {
-            await login(formData);
-            router.push('/'); // Redirect to home page on success
-        } catch (err: unknown) {
-            const errorMessage = err instanceof Error ? err.message : 'Failed to log in. Please try again.';
-            setError(errorMessage);
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    if (token) {
+        redirect('/');
+    }
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 px-4 py-12">
@@ -58,58 +24,8 @@ export default function LoginPage() {
                         <p className="text-gray-600">Sign in to your account to continue</p>
                     </div>
 
-                    {/* Error Message */}
-                    {error && (
-                        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-                            {error}
-                        </div>
-                    )}
-
                     {/* Form */}
-                    <form onSubmit={handleSubmit} className="space-y-5">
-                        {/* Email */}
-                        <div className="space-y-2">
-                            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                                Email Address
-                            </label>
-                            <input
-                                id="email"
-                                name="email"
-                                type="email"
-                                required
-                                value={formData.email}
-                                onChange={handleChange}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all outline-none"
-                                placeholder="you@example.com"
-                            />
-                        </div>
-
-                        {/* Password */}
-                        <div className="space-y-2">
-                            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                                Password
-                            </label>
-                            <input
-                                id="password"
-                                name="password"
-                                type="password"
-                                required
-                                value={formData.password}
-                                onChange={handleChange}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all outline-none"
-                                placeholder="••••••••"
-                            />
-                        </div>
-
-                        {/* Submit Button */}
-                        <button
-                            type="submit"
-                            disabled={isLoading}
-                            className="w-full bg-black text-white py-3 rounded-lg font-medium hover:bg-gray-800 transition-colors duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                        >
-                            {isLoading ? 'Signing in...' : 'Sign In'}
-                        </button>
-                    </form>
+                    <LoginForm loginAction={loginAction} />
 
                     {/* Divider */}
                     <div className="relative">
